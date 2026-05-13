@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets / env files
+.env
+.env.local
+*:Zone.Identifier
+
+# Generated data — rebuild via src/data_construction/ (raw CSVs are upstream-public)
+data/
+
+# Experiment outputs — rebuild via src/evaluation/
+outputs/
+
+# Pilot runtime outputs — rebuild via pilot/run.py
+pilot/results/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

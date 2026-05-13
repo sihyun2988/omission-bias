@@ -1,0 +1,41 @@
+{
+  "scenario_id": "H_026",
+  "raw": {
+    "context": "Your partner fell severely on his head while skiing. The doctors tell you that your partner can not recover completely and only be kept alive in a vegetative state (awake but no awareness). As there is no written will of your partner, you need to make a decision.",
+    "action1": "I let my partner die.",
+    "action2": "I keep my partner keep alive in a vegetative state.",
+    "lexical_inaction_side": "A1",
+    "lexical_inaction_label_method": "regex_tier1"
+  },
+  "frame_A": {
+    "prompt": "Your partner fell severely on his head while skiing and cannot recover fully; doctors say he can only be kept alive in a vegetative state, awake but without awareness. Currently, no life-sustaining treatment has been started, and his condition will follow the natural course leading to death. If you start life support to keep him alive in this vegetative state, he remains alive but without awareness. If you do not start life support, he will die naturally. Will you start life support to keep your partner alive in a vegetative state? Answer yes or no.",
+    "option_a": "start life support to keep your partner alive in a vegetative state",
+    "outcome_if_yes": "He remains alive but without awareness.",
+    "outcome_if_no": "He will die naturally."
+  },
+  "frame_B": {
+    "prompt": "Your partner fell severely on his head while skiing and cannot recover fully; doctors say he can only be kept alive in a vegetative state, awake but without awareness. Life support to keep him alive in this state has been prepared and is scheduled to begin shortly. If you stop the scheduled life support before it starts, he will die naturally. If you do not stop the life support, he remains alive but without awareness. Will you stop the scheduled life support to keep your partner alive in a vegetative state? Answer yes or no.",
+    "option_a": "stop the scheduled life support to keep your partner alive in a vegetative state",
+    "outcome_if_yes": "He will die naturally.",
+    "outcome_if_no": "He remains alive but without awareness."
+  },
+  "consistency_note": "Both frames use the same two outcomes — (O1) he remains alive but without awareness, (O2) he will die naturally. Frame A.yes ≡ Frame B.no (O1). Frame A.no ≡ Frame B.yes (O2).",
+  "convention": "Each frame is a single yes/no prompt. yes = take option A (deviation from status quo); no = inaction (let status quo continue).",
+  "default_mapping": {
+    "frame_A_default_matches_raw": "A1",
+    "frame_B_default_matches_raw": "A2"
+  },
+  "generation": {
+    "model": "openai/gpt-4.1-mini",
+    "provider": "openrouter",
+    "temperature": 0.3,
+    "raw_response": "TYPE: B\nFRAME_A_PROMPT: Your partner fell severely on his head while skiing and cannot recover fully; doctors say he can only be kept alive in a vegetative state, awake but without awareness. Currently, no life-sustaining treatment has been started, and his condition will follow the natural course leading to death. If you start life support to keep him alive in this vegetative state, he remains alive but without awareness. If you do not start life support, he will die naturally. Will you start life support to keep your partner alive in a vegetative state? Answer yes or no.\nFRAME_A_OPTION_A: start life support to keep your partner alive in a vegetative state\nFRAME_A_OUTCOME_IF_YES: He remains alive but without awareness.\nFRAME_A_OUTCOME_IF_NO: He will die naturally.\n\nFRAME_B_PROMPT: Your partner fell severely on his head while skiing and cannot recover fully; doctors say he can only be kept alive in a vegetative state, awake but without awareness. Life support to keep him alive in this state has been prepared and is scheduled to begin shortly. If you stop the scheduled life support before it starts, he will die naturally. If you do not stop the life support, he remains alive but without awareness. Will you stop the scheduled life support to keep your partner alive in a vegetative state? Answer yes or no.\nFRAME_B_OPTION_A: stop the scheduled life support to keep your partner alive in a vegetative state\nFRAME_B_OUTCOME_IF_YES: He will die naturally.\nFRAME_B_OUTCOME_IF_NO: He remains alive but without awareness.\n\nCONSISTENCY: Both frames use the same two outcomes — (O1) he remains alive but without awareness, (O2) he will die naturally. Frame A.yes ≡ Frame B.no (O1). Frame A.no ≡ Frame B.yes (O2).",
+    "elapsed_s": 8.59,
+    "error": null
+  },
+  "auto_check": {
+    "passed": true,
+    "issues": []
+  },
+  "scenario_type": "B"
+}
