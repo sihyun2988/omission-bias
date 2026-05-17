@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
 
 # Virtual environments
 .venv/
@@ -21,7 +27,20 @@ outputs/
 # Pilot runtime outputs — rebuild via pilot/run.py
 pilot/results/
 
+# Local agent metadata
+.agents/
+.codex/
+
+# Local references / scratch backups
+/*.pdf
+*_backup.py
+*.bak
+*.tmp
+*.log
+
 # OS / editor
 .DS_Store
 .idea/
 .vscode/
+*.swp
+*~

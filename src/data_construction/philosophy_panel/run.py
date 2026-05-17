@@ -62,13 +62,30 @@ def load_done(jsonl_path: Path) -> set[tuple]:
     return done
 
 
+def _well_formed(r: dict) -> bool:
+    """A scenario is panel-able only if both frames carry a prompt string."""
+    for fr in ("frame_A", "frame_B"):
+        f = r.get(fr)
+        if not isinstance(f, dict) or not isinstance(f.get("prompt"), str):
+            return False
+    return True
+
+
 def load_paired_frames(path: Path, limit: int | None) -> list[dict]:
     rows = []
+    skipped = []
     with open(path) as f:
         for line in f:
-            rows.append(json.loads(line))
+            r = json.loads(line)
+            if _well_formed(r):
+                rows.append(r)
+            else:
+                skipped.append(r.get("scenario_id", "?"))
             if limit and len(rows) >= limit:
                 break
+    if skipped:
+        print(f"WARN: skipped {len(skipped)} malformed scenario(s) "
+              f"(frame_A/frame_B missing or null): {', '.join(skipped)}")
     return rows
 
 

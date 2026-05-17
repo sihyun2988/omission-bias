@@ -33,7 +33,6 @@ PHILOSOPHIES = {
             "Evaluate each scenario by Bentham's greatest-happiness principle: the morally right "
             "action is the one that produces the greatest aggregate well-being and the least "
             "aggregate suffering across all parties affected, counted impartially. "
-            "Treat doing and allowing as morally equivalent when outcomes are equal. "
             "Do not invoke duties, virtues, relationships, or contracts as primary reasons.\n\n"
             + OUTPUT_FORMAT
         ),
@@ -95,3 +94,7 @@ USER_PROMPT_TEMPLATE = """\
 {prompt}
 
 Apply your assigned philosophy and reply in the required format."""
+
+
+PHILS: tuple[str, ...] = tuple(PHILOSOPHIES.keys())
+FRAMES: tuple[str, ...] = ("A", "B")
