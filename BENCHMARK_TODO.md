@@ -89,6 +89,22 @@ typing이 random sampling보다 framing-invariant inaction(NN)을 더 잘 노출
 **#1 먼저** (spine, 평가 출력 이미 있어 즉시 착수 가능) → #4 (동결) →
 #2/#3/#5 (신뢰성·재현성 형식 요건, 병렬 가능).
 
+## #6 ★재현성 — 완화 run 후 prior 실험 설정 통일 재실행 (2026-05-19, NEXT)
+
+> 순서: ① 캐노니컬 완화 실험 완주 (218×5×M0~M3b, `full218_clean/`,
+> `--max-tokens 8192`, 게이트웨이 패치, 통일 프롬프트) → ② **그 설정과
+> 동일하게 prior 전부 재실행**: E1 overall OBR + E1 filter_vs_random
+> (RQ1) + E2 obr_by_conflict. 맞출 것: max_tokens 8192 (E1=256였음 —
+> 이 불일치가 발단), 동일 EVAL_SYSTEM, 게이트웨이 패치, T=0/n=1,
+> **218 scope** (`eval_model.py`의 하드코딩 `PARADIGM_MISFIT` 도 제거/
+> `--keep-misfit` 해서 217→218).
+> **이유:** 논문 재현성 — 모든 보고 수치가 단일 설정에서 나와야 함.
+> **부수효과:** E1/E2를 동일설정 재실행하면 in-run M0 == E1 이 byte-
+> 진실이 되어 **§191 문서 softening 불필요**(matched-config면 §191이
+> 문구 그대로 성립). RQ1 수치 재생성 → RESEARCH_PLAN §4.1/§5 + 메모리
+> `eval-models-and-e1-e2-done` 갱신. 구 256/217 run은 superseded 보존.
+> **Acceptance:** 전 실험이 동일 config 산출 + 보고 수치 전부 그 run 기준.
+
 ### 주의 (메모리/CLAUDE.md)
 - 벤치마크 = `label_status=="labeled"` subset만. unanimous/one-sided은
   construction 단계 제외이지 confound baseline 아님.

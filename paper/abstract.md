@@ -15,8 +15,8 @@ framing-invariant inaction substantially better than random sampling
 (`[+X]` OBR, consistent across models), validating the construction. Evaluating
 five cross-vendor models, we find that omission bias is *non-uniform across
 conflict types* and that each model carries a distinct **moral fingerprint** —
-a characteristic alignment with particular philosophical camps. Finally, a
-philosophy-neutral, label-free prompt and a balanced five-philosophy injection
-both reduce framing-invariant inaction without requiring conflict labels at
-inference time. We make no causal claim; the panel is a construction-time
+a characteristic alignment with particular philosophical camps. Finally, simple
+prompt-level interventions — considering-the-opposite and a decision ledger —
+reduce framing-invariant inaction without any change to the model or its
+training. We make no causal claim; the panel is a construction-time
 signal only. Benchmark and code are released.

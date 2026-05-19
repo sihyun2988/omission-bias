@@ -39,8 +39,8 @@ hand-rolled (no scipy) and drawn with matplotlib.
 Output (co-located with the E1 run it consumes —
     .../<MMDD>/<HHMM>/E1_overall_OBR/eval_tuples.jsonl
         → .../<MMDD>/<HHMM>/E3_fingerprint/ ):
-    profile_per_model.csv  cosine_matrix.csv
-    dendrogram.png  permutation_pvalue.txt
+    profile_per_model.csv  cosine_matrix.csv  fingerprint.png
+    fingerprint_zprofile.png  dendrogram.png  permutation_pvalue.txt
 (falls back to a fresh MMDD/HHMM timestamp if --eval isn't in that layout;
 override with --out-dir.)
 
@@ -179,7 +179,10 @@ def null_profile_perm(fc_scenarios, labeled, q_yn, n_perm, rng):
 
 
 def perm_pvalues(obs, null_mat):
-    """Per-phil two-sided percentile p + omnibus Σz² perm p."""
+    """Per-phil two-sided percentile p, signed per-phil z vs the model's own
+    null, + omnibus Σz² perm p. signed_z[j] = (obs - null_mean)/null_sd is the
+    departure of this model's leaning on phil j from its OWN directional-marginal
+    null, in SD units — the per-axis decomposition of the omnibus statistic."""
     k = len(obs)
     means = [sum(col) / len(null_mat) for col in zip(*null_mat)]
     sds = []
@@ -187,11 +190,13 @@ def perm_pvalues(obs, null_mat):
         var = sum((x - means[j]) ** 2 for x in col) / len(null_mat)
         sds.append(math.sqrt(var))
     per_phil = []
+    signed_z = []
     for j in range(k):
         ge = sum(1 for row in null_mat if row[j] >= obs[j]) + 1
         le = sum(1 for row in null_mat if row[j] <= obs[j]) + 1
         n1 = len(null_mat) + 1
         per_phil.append(min(1.0, 2 * min(ge / n1, le / n1)))
+        signed_z.append((obs[j] - means[j]) / sds[j] if sds[j] > 0 else 0.0)
 
     def z2(vec):
         return sum(((vec[j] - means[j]) / sds[j]) ** 2
@@ -200,7 +205,7 @@ def perm_pvalues(obs, null_mat):
     obs_stat = z2(obs)
     ge = sum(1 for row in null_mat if z2(row) >= obs_stat) + 1
     omnibus_p = ge / (len(null_mat) + 1)
-    return per_phil, obs_stat, omnibus_p
+    return per_phil, signed_z, obs_stat, omnibus_p
 
 
 def cosine_matrix(profiles: dict[str, list[float]], models):
@@ -394,6 +399,63 @@ def draw_fingerprint(models, norm_by_model, bias_by_model, out_path: Path):
     plt.close(fig)
 
 
+def draw_zfingerprint(models, z_by_model, p_by_model, omnibus_by_model,
+                      out_path: Path):
+    """RQ3 'each model has its own fingerprint' figure. Diverging heatmap:
+    rows = models, cols = 5 philosophies, cell = signed z of the model's
+    leaning vs ITS OWN directional-marginal null (not vs other models — that
+    is the cosine claim and is weak). Star = per-axis two-sided perm p<0.05;
+    right strip = omnibus Σz² / perm p. Grounded in the actual permutation
+    statistic, so the visual contrast is the real per-axis decomposition of
+    the (supported) omnibus departure, not a cosmetic rescale."""
+    n = len(models)
+    k = len(PHILS)
+    Z = [[(z_by_model[m].get(ph) or 0.0) for ph in PHILS] for m in models]
+    vmax = max((abs(v) for row in Z for v in row), default=1.0) or 1.0
+
+    fig, ax = plt.subplots(figsize=(1.5 * k + 4.5, 0.72 * n + 2.0))
+    im = ax.imshow(Z, cmap="RdBu_r", vmin=-vmax, vmax=vmax, aspect="auto")
+
+    for i, m in enumerate(models):
+        for j, ph in enumerate(PHILS):
+            z = z_by_model[m].get(ph)
+            pv = p_by_model[m].get(ph)
+            if z is None:
+                txt = "n/a"
+            else:
+                star = "*" if (pv is not None and pv < 0.05) else ""
+                txt = f"{z:+.2f}{star}"
+            ax.text(j, i, txt, ha="center", va="center", fontsize=9,
+                    color="white" if abs(z or 0.0) > 0.55 * vmax else "#222")
+
+    ax.set_xticks(range(k))
+    ax.set_xticklabels([_PHIL_SHORT[ph] for ph in PHILS], fontsize=10)
+    ax.set_yticks(range(n))
+    ax.set_yticklabels([_nice(m) for m in models], fontsize=10)
+    ax.set_xlabel("moral-philosophy camp")
+    for i, m in enumerate(models):
+        om = omnibus_by_model.get(m, {})
+        z2, pv = om.get("z2"), om.get("p")
+        if z2 is None:
+            tag = "underpowered"
+        else:
+            sig = "SIG" if (pv is not None and pv < 0.05) else "ns"
+            tag = f"Σz²={z2:.1f}  p={pv:.4f} [{sig}]"
+        ax.text(k - 0.4, i, tag, ha="left", va="center", fontsize=8,
+                color="#333")
+
+    ax.set_xlim(-0.5, k - 0.5 + 3.2)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.16)
+    cbar.set_label("signed z vs the model's OWN null  (+ = over-aligned)",
+                   fontsize=8)
+    ax.set_title("E3 / RQ3 — each model's distinctive moral fingerprint\n"
+                 "(departure from its own directional-marginal null; "
+                 "* = per-axis perm p<0.05)", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
 # ----------------------------------------------------------------- main ---
 def main():
     p = argparse.ArgumentParser()
@@ -427,6 +489,9 @@ def main():
     profiles: dict[str, list[float]] = {}
     norm_by_model: dict[str, dict] = {}
     bias_by_model: dict[str, dict] = {}
+    z_by_model: dict[str, dict] = {}
+    p_by_model: dict[str, dict] = {}
+    omnibus_by_model: dict[str, dict] = {}
     rows = []
     perm_lines = []
 
@@ -447,12 +512,17 @@ def main():
         q = summ["q_yn"]
         if q is None or not fc_scn:
             per_phil = [None] * len(PHILS)
+            signed_z = [None] * len(PHILS)
             omnibus_p = None
             obs_stat = None
         else:
             null_mat = null_profile_perm(fc_scn, labeled, q,
                                          args.n_perm, rng)
-            per_phil, obs_stat, omnibus_p = perm_pvalues(raw, null_mat)
+            per_phil, signed_z, obs_stat, omnibus_p = perm_pvalues(
+                raw, null_mat)
+        z_by_model[m] = {ph: signed_z[i] for i, ph in enumerate(PHILS)}
+        p_by_model[m] = {ph: per_phil[i] for i, ph in enumerate(PHILS)}
+        omnibus_by_model[m] = {"z2": obs_stat, "p": omnibus_p}
 
         row = {
             "model": m,
@@ -467,6 +537,7 @@ def main():
         for i, ph in enumerate(PHILS):
             row[f"raw_{ph}"] = _r(raw[i])
             row[f"norm_{ph}"] = _r(norm[i])
+            row[f"z_{ph}"] = _r(signed_z[i])
             row[f"p_{ph}"] = _r(per_phil[i])
         rows.append(row)
 
@@ -510,6 +581,8 @@ def main():
 
     draw_fingerprint(models, norm_by_model, bias_by_model,
                      out_dir / "fingerprint.png")
+    draw_zfingerprint(models, z_by_model, p_by_model, omnibus_by_model,
+                      out_dir / "fingerprint_zprofile.png")
     draw_dendrogram(models, mat, out_dir / "dendrogram.png")
 
     any_sig = any(r["omnibus_perm_p"] not in ("", None)

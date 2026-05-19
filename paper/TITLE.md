@@ -1,9 +1,20 @@
 # Working Title (가제)
 
-> 확정일: 2026-05-17 · 가제, 추후 다듬을 수 있음
+> 확정일: 2026-05-17 · 벤치마크명 OMIT 확정: 2026-05-19
 
-**Omission Bias across Moral-Philosophical Conflicts: A Benchmark for
-Measuring and Mitigating Inaction in Large Language Models**
+## 벤치마크명: **OMIT**
+**O**mission bias under **M**oral-philosoph**I**cal conflic**T**.
+어원적으로 "to omit"(행동을 빠뜨리다) = 측정 현상과 일치. ACL Anthology /
+Scholar 충돌 검색 완료(2026-05-19) — 동명 LLM/moral 벤치마크 없음.
+구축 섹션(§3) 제목 = **"The OMIT Benchmark"** (MORABLES 장르 컨벤션).
+
+## 제목 (OMIT 반영, 권장형)
+
+**OMIT: A Benchmark for Measuring and Mitigating Omission Bias across
+Moral-Philosophical Conflicts in Large Language Models**
+
+이전 가제(부제형): **Omission Bias across Moral-Philosophical Conflicts:
+A Benchmark for Measuring and Mitigating Inaction in Large Language Models**
 
 ## 제목이 약속하는 4요소
 1. **Omission Bias** — 측정 대상 현상

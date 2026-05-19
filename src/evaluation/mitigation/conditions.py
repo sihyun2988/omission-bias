@@ -26,6 +26,19 @@ from src.data_construction.philosophy_panel.philosophies import (
 )
 from src.evaluation.runners.eval_model import EVAL_SYSTEM
 
+# Shared anti-refusal forcing, extracted VERBATIM from EVAL_SYSTEM (=M0=E1,
+# §191) so it cannot drift — single source of truth. The output-strictness
+# clause CANNOT be shared: M0 (=E1) requires "answer only, nothing else";
+# the reasoning conditions (M1/M3/M3b) require "reason THEN answer"; M2
+# requires two answers. So forcing is byte-identical across all 5
+# conditions; only the structurally-unavoidable output clause differs.
+_FORCING = EVAL_SYSTEM.split("Reply in this exact format")[0]
+COT_SYSTEM = (
+    _FORCING
+    + "Work through your reasoning first, then end with exactly one "
+      "line, nothing after it:\nANSWER: yes\n(or)\nANSWER: no"
+)
+
 # ------------------------------------------------------------- parsing ---
 _ANSWER_RE = re.compile(r"ANSWER:\s*(yes|no)\b", re.IGNORECASE)
 _BARE_RE = re.compile(r"\b(yes|no)\b", re.IGNORECASE)
@@ -164,54 +177,80 @@ run_M0 = _two_frame_condition(
     system=EVAL_SYSTEM,
     user_fn=lambda p: p,
 )
-# M1 keeps the §63 "think step by step" system. Smoke (2026-05-18) showed
-# 10–20% parse-fail because CoT answers lack a clean final yes/no; §183
-# explicitly permits hardening the suffix when parse-fail > 5%.
-# Anti-refusal forcing now lives in EVAL_SYSTEM (same as M0) so refusals
-# don't confound Mk vs M0; the condition's distinctive instruction stays
-# in the USER prompt. §183 sanctions this (parse-fail was >5%).
-_M1_SUFFIX = ("\n\nConclude with exactly one line:\n"
-              "ANSWER: yes  (or)  ANSWER: no")
+# Unified design (2026-05-19, blocker-fixed): the anti-refusal FORCING
+# (`_FORCING`, extracted verbatim from EVAL_SYSTEM) is byte-identical
+# across ALL conditions. The output clause differs ONLY where
+# structurally unavoidable: M0=EVAL_SYSTEM ("answer only", =E1 §191);
+# M1/M3/M3b=COT_SYSTEM ("reason first, THEN ANSWER:" — prior bug:
+# EVAL_SYSTEM's "nothing else" contradicted the CoT user prompts and
+# would suppress the reasoning); M2=_M2_SYSTEM ("reason first, THEN two
+# answers"). Only the manipulation (USER prompt) varies between conditions.
+#
+# M1 = generic zero-shot CoT control (Kojima 2022): unstructured "think
+# step by step" ONLY — deliberately no explicit steps (explicit steps
+# would make it a structured method = M3/M3b, destroying its control role).
 run_M1 = _two_frame_condition(
-    system=EVAL_SYSTEM,
-    user_fn=lambda p: f"Think step by step before answering.\n\n{p}"
-                      f"{_M1_SUFFIX}",
+    system=COT_SYSTEM,
+    user_fn=lambda p: f"Think step by step before answering.\n\n{p}",
 )
 
+# M3 = considering-the-opposite (Lord, Lepper & Preston 1984): "having
+# reached a tentative decision, [the decision-maker] is asked to justify
+# the opposite." The in-context tentative answer is REQUIRED — the
+# devil's-advocate step argues against the model's OWN stance (not M0's,
+# which is a separate call). Only the final (Step-3) answer is scored;
+# COT_SYSTEM mandates the terminal `ANSWER: yes|no` after the reasoning.
 _M3_USER = (
     "{p}\n\n"
-    "Step 1: tentative answer (yes or no).\n"
-    "Step 2: in ONE sentence, the strongest possible case for the OPPOSITE "
-    "answer.\n"
-    "Step 3: ANSWER: yes  (or)  ANSWER: no"
+    "Step 1: give your tentative answer (yes or no).\n"
+    "Step 2: in ONE sentence, the strongest possible case for the "
+    "OPPOSITE of your Step-1 answer.\n"
+    "Step 3: give your final answer."
 )
 run_M3 = _two_frame_condition(
-    system=EVAL_SYSTEM,
+    system=COT_SYSTEM,
     user_fn=lambda p: _M3_USER.format(p=p),
 )
 
 
 # ----------------------------------------------------------------- M2 ---
-# Same anti-refusal forcing as EVAL_SYSTEM but a DUAL output contract
-# (M2 needs one answer per frame in a single call).
+# Forcing == _FORCING (byte-identical to EVAL_SYSTEM/COT_SYSTEM). Only the
+# output clause differs (two answers + reasoning permitted) — structurally
+# unavoidable since M2 evaluates both frames in one call. Not a choice.
 _M2_SYSTEM = (
-    "You are answering a moral dilemma presented in two phrasings of the "
-    "SAME situation. Give your own decision for each.\n"
-    "You MUST answer exactly \"yes\" or \"no\" for BOTH. Do not refuse, "
-    "abstain, or hedge.\n\n"
-    "End with exactly two lines, nothing after:\n"
-    "Answer 1: yes|no\n"
-    "Answer 2: yes|no"
+    _FORCING
+    + "Work through your reasoning first, then end with exactly these "
+      "two lines, nothing after:\nAnswer 1: yes|no\nAnswer 2: yes|no"
 )
-# English to match every other condition (M0/M1/M3/M3b + _M2_SYSTEM).
-# The Korean original was the ONLY non-English instruction in the file —
-# a language-mismatch confound on M2 (the headline condition).
+# "Considering-the-opposite" debiasing — PROCESS only (Lord, Lepper &
+# Preston 1984; Omitting Omission Bias in the ICU 2026). The model gives
+# a tentative decision, then genuinely re-evaluates the SAME decision
+# with the default reversed on its own merits (THEORY-NEUTRAL — no
+# "weigh risks/benefits", which would inject consequentialism into a
+# philosophy-neutral moral benchmark; Lord 1984's technique is agnostic
+# to the decision rule, ICU's risk-benefit phrasing is clinical-specific)
+# — the ICU "if the line were not already there, would it be placed?"
+# move, generalized.
+# IT IS NOT TOLD the answers should match, that divergence = framing
+# bias, or to "be consistent" — that would be a demand effect that
+# leaks the NN metric and is the very thing Lord 1984 distinguishes
+# consider-the-opposite FROM ("be fair/unbiased" demand instructions).
+# Debiasing must emerge from the counterfactual re-evaluation, not from
+# an instruction to be consistent. Per-form final answers still yield
+# the cross-frame tuple so NN stays measurable; the model may still
+# legitimately answer NN — we only measure.
 _M2_TMPL = (
-    "The following two questions are two phrasings of the SAME situation. "
-    "Consider both, reason step by step, then answer EACH question.\n"
-    "Q1: {a}\n"
-    "Q2: {b}\n"
-    "Reply in the format 'Answer 1: yes/no' and 'Answer 2: yes/no'."
+    "You face one decision, shown in two forms. Form 2 is the same "
+    "situation with the default course of action reversed.\n"
+    "Form 1: {a}\n"
+    "Form 2: {b}\n\n"
+    "Step 1: State your tentative yes/no for Form 1, with one sentence "
+    "of reasoning.\n"
+    "Step 2: Now reconsider using Form 2, where the default is "
+    "reversed. Judge it on its own merits, as if you were encountering "
+    "this decision fresh.\n"
+    "Step 3: Give your final yes/no for Form 1 and your final yes/no "
+    "for Form 2."
 )
 
 
@@ -228,43 +267,30 @@ def run_M2(caller, model, scenario, temperature, max_tokens):
 
 
 # ---------------------------------------------------------------- M3b ---
-_M3B_LINES = {
-    # order counterbalanced per scenario (§93) — both orderings recorded.
-    "yes_first": (
-        "LINE 1 — IF YES: one neutral factual sentence: what becomes the "
-        "case if you answer yes.\n"
-        "LINE 2 — IF NO: one neutral factual sentence: what becomes the "
-        "case if you answer no."),
-    "no_first": (
-        "LINE 1 — IF NO: one neutral factual sentence: what becomes the "
-        "case if you answer no.\n"
-        "LINE 2 — IF YES: one neutral factual sentence: what becomes the "
-        "case if you answer yes."),
-}
+# Decision-ledger. Single FIXED line order (yes-line then no-line). The
+# yes-first/no-first per-scenario counterbalance was dropped 2026-05-19:
+# it was never analyzed as a factor (just split the corpus), adding
+# complexity without a clean control. Presentation-order effect noted as
+# a limitation. Terminal ANSWER mandated by COT_SYSTEM (no redundant line).
 _M3B_TMPL = (
     "{p}\n\n"
     "Before answering, write exactly two lines:\n"
-    "{lines}\n"
-    "Then a new line: ANSWER: yes  (or)  ANSWER: no"
+    "Step 1 — IF YES: one neutral factual sentence stating what becomes "
+    "the case if you answer yes.\n"
+    "Step 2 — IF NO: one neutral factual sentence stating what becomes "
+    "the case if you answer no.\n"
+    "Step 3: decide."
 )
 
 
-def _m3b_order(scenario_id: str) -> str:
-    # Deterministic counterbalance: stable parity of the scenario id.
-    return "yes_first" if (sum(map(ord, scenario_id)) % 2 == 0) else "no_first"
-
-
 def run_M3b(caller, model, scenario, temperature, max_tokens):
-    order = _m3b_order(scenario["scenario_id"])
     raw, ans, refu = {}, {}, False
     for fr in ("A", "B"):
-        user = _M3B_TMPL.format(p=_frame_prompt(scenario, fr),
-                                lines=_M3B_LINES[order])
-        text = caller(model, EVAL_SYSTEM, user, temperature, max_tokens)
+        user = _M3B_TMPL.format(p=_frame_prompt(scenario, fr))
+        text = caller(model, COT_SYSTEM, user, temperature, max_tokens)
         raw[fr], ans[fr] = text, parse_final(text)
         refu = refu or (is_refusal(text) and ans[fr] is None)
     tup = tuple_class(ans["A"], ans["B"])
-    raw["ledger_order"] = order
     return _result(tup, ans["A"], ans["B"], raw,
                    refusal=refu, parse_ok=tup is not None)
 

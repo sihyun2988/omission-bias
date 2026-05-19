@@ -233,7 +233,7 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 
 ### E7 — RQ4: Mitigation (5-철학 균형주입 + 철학중립 label-free, 통합)
 
-- **상세 설계·정확한 prompt 동결:** `~/.claude/plans/research-plan-v4-giggly-nebula.md` (전면 개정 2026-05-17). 본 절은 요약.
+- **상세 설계·정확한 prompt 동결:** `~/.claude/plans/research-plan-v4-giggly-nebula.md` (전면 개정 2026-05-17). 본 절은 요약. **완화 프롬프트 설계의 실존 탑티어 레퍼런스(Kojima 2022 NeurIPS / Lord-Lepper-Preston 1984 JPSP / Mussweiler 2000 PSPB / Madaan 2023 NeurIPS Self-Refine / Spranca-Minsk-Baron 1991 JESP / Cheung 2025 PNAS / Scherrer 2023 NeurIPS)** 는 supplement plan §"완화 프롬프트 설계 근거" 에 표로 동결(2026-05-19 web 검증).
 - **조건 = M0–M4 (전부 label-free, within-subject paired):**
   - **M0** baseline / **M1** generic CoT (control — "단순 reflection 환원" 분리).
   - **M2** 두-프레임 동시 + CoT, 각 frame yes/no (NN 측정 가능; 구 C1 의 Outcome 택1 폐기).
