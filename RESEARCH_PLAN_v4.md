@@ -1,9 +1,11 @@
 # Research Plan v4 — Conflict-Typed Omission Bias across LLMs
 
-> 작성일: 2026-05-13 · 본 문서는 `RESEARCH_PLAN_v3.md` (persona-vector pivot) 을 **전면 폐기**하고 새로 작성한 plan이다.
-> v3 의 mechanistic / persona-vector 방향은 모두 들어냈고, **데이터 구축은 paired mirror frame + 2-stage philosophy panel (Stage 1 unanimity filter, Stage 2 (Y,N) vs (N,Y) conflict labeling, 2026-05-13 구현)** 으로, **분석은 모델 × 철학-충돌-유형 별 omission bias rate (OBR) 비교** 로 단일화한다. 완화 (mitigation) 단계는 **prompt-level 로 확정** — 상세 설계는 별도 supplement plan (`~/.claude/plans/research-plan-v4-giggly-nebula.md`, 2026-05-15) 에 동결.
+> **🔴 2026-05-18: M4(철학 5 MAD) 완전 폐기 + 완화 스코프 전면 218.** 이 배너가 이하 모든 M4/MAD 및 핫스팟-manifest 서술에 우선한다. 완화 조건 = **M0/M1/M2/M3/M3b** 만 (M4 미등록). H4·primary set 의 `{M2,M3,M3b,M4}` → **`{M2,M3,M3b}`**. "M4 vs M3/M3b 보조분석"·"RQ3 지문 base↔M4 이동"·F5 의 M4 항 모두 무효. 스코프 = **전체 218 labeled × 5 모델** (top-cell/NN 서브샘플·≤120 manifest 폐기, `--all-scenarios`). 사유: M4 = 20콜/시나리오 비용 driver + 파서 취약 + llama 에서 net-harmful(NN→YY). supplement plan 상단 배너와 동기화. (변경 이력 항목도 하단 참조.)
 >
-> **Spine (논문의 단일 thesis):** 도덕철학 패널의 *불일치* 는 omission bias 의 단순한 상관 라벨이 아니라 *조작 가능한 인과 축* 이다 — 같은 패널 신호가 (a) 어디서 bias 가 터질지 *예측* 하고 (**RQ2a**), (b) 그 축을 정조준해 흔들면 bias 가 예측 방향으로 움직여 *인과* 임이 드러난다 (**E7 C2/C3 = oracle 인과 probe, knockout-style — 배포 방법 아님, 제거 가능분의 상한선**). (a)+(b) 가 spine. 추가로 (c) 라벨 불필요한 **label-free 배포 근사 (E7 C1/C4)** 가 그 상한선의 일부를 회수 → 실무 actionable. 진단·인과확인이 동일 기구라는 점이 closure. **RQ2(=RQ2a 예측 + RQ2b signature 병합) + E7 이 본문 spine; RQ1 은 supporting; RQ5 는 robustness 부록 (RQ3→RQ2b 병합·RQ4 harm-strata 폐기 2026-05-16; E7 oracle-probe vs label-free 배포 분리 2026-05-17).**
+> 작성일: 2026-05-13 · 본 문서는 `RESEARCH_PLAN_v3.md` (persona-vector pivot) 을 **전면 폐기**하고 새로 작성한 plan이다.
+> v3 의 mechanistic / persona-vector 방향은 모두 들어냈고, **데이터 구축은 paired mirror frame + 2-stage philosophy panel (Stage 1 unanimity filter, Stage 2 (Y,N) vs (N,Y) conflict labeling, 2026-05-13 구현)** 으로, **분석은 (RQ1) 구축법 검증 + (RQ2) 충돌유형별 OBR 서술 + (RQ3) 모델 도덕지문 + (RQ4) 5-철학 주입=완화** 로 정리한다. 완화는 별도 단계가 아니라 **RQ4 안에 통합** — 상세 설계·정확한 prompt 는 supplement plan (`~/.claude/plans/research-plan-v4-giggly-nebula.md`, 전면 개정 2026-05-17) 에 동결.
+>
+> **Thesis (인과 주장 없음 — 2026-05-17 전면 재정의):** 본 논문의 기여는 *인과 축 증명* 이 아니라 **(1) 도덕철학-패널 disagreement 로 omission bias 를 더 잘 노출하는 conflict-typed 벤치마크 구축법, (2) 모델별 도덕지문 + 어떤 충돌에서 편향이 강한지의 구조적 분석, (3) 철학중립·label-free 완화기법 + 5-철학 균형주입의 효과** 이다. 구판 spine("패널 불일치 = 조작 가능한 인과 축", C2/C3 oracle 주입으로 인과 입증)은 **폐기**: 단일-철학을 정답인 양 주입하는 것은 철학적으로 방어 불가하고, 그 주입은 *원인*(조작 불가능한 시나리오 속성)이 아니라 *매개*(모델 채택 철학)를 건드리는 한정된 steerability 주장에 불과 → 인과 야망 자체를 내려놓는다. 이 결정으로 구 §8 의 ★fatal-review 2행(oracle-label 의존·순환논증)이 *원인 소멸로 자동 해소*. **RQ1 = 구축 검증(spine), RQ2/RQ3 = 분석 핵심, RQ4 = 완화(통합). RQ5(NN vs YY)는 robustness.** (변경 이력: RQ3→RQ2b 병합·RQ4 harm-strata 폐기 2026-05-16 → 2026-05-17 RQ 전면 재정의·C2/C3 인과실험 폐기·완화를 RQ4 로 흡수.)
 >
 > Anchor:
 > - Cheung, Maier, Lieder (2025, *PNAS*) — paired action↔omission frame paradigm, framing-invariant inaction = omission bias 의 operational definition.
@@ -29,7 +31,7 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 
 라벨링 결과 시나리오는 *철학 A vs 철학 B 충돌* 의 인스턴스가 된다. 그 위에서 평가 모델을 돌려, **모델 × 충돌 pair** 의 cell 마다 OBR 을 측정한다. 이것이 v4 의 단일 분석 축이다.
 
-**핵심 thesis (모든 piece 가 이 한 문장으로 수렴해야 함):** *패널 불일치는 omission bias 의 조작 가능한 인과 축이다.* 이 주장은 — (1) **예측**: 시나리오가 어떤 철학적 충돌 (yn vs ny) 의 인스턴스인지가 평가 모델의 OBR 을 예측한다 (RQ2a). (2) **인과 확인 (oracle probe)**: 그 *같은* 패널이 찍어준 철학 (yn_phils/ny_phils) 을 평가 모델에 persona 주입하면 OBR 이 예측 방향(C2→YN, C3→NY)으로 이동 (E7 C2/C3). 이는 *deployable 방법이 아니라 knockout-style causal manipulation* — 구축-시 라벨(oracle)을 써도 통제 실험으로서 정당하며, philosophy-conflict 축으로 제거 가능한 bias 의 **상한선**을 준다. (3) **label-free 배포 (actionable)**: 라벨이 필요 없는 C1(동시 제시)·C4(다관점)가 그 상한선의 일부(목표 ≥50%)를 회수 → 실무에서 쓸 수 있는 완화. (1)+(2) 가 spine 의 인과 closure 이고 (3) 이 actionable 절. E7 C2/C3 는 부록이 아니라 correlational → causal 격상의 *논증 키스톤*, C1/C4 는 그 인과를 배포 가능한 형태로 옮기는 절. **C2/C3 를 배포 방법으로 over-claim 하지 않는 것이 정직성의 핵심 (2026-05-17 정정).** RQ1 은 PNAS 의 단일-모델 결과를 multi-vendor 로 확장하는 warm-up, RQ2b (model-specific signature) 는 spine 을 강화하지만 실패해도 spine 이 무너지지 않는 보너스 (그래서 RQ3 을 별개 RQ 가 아니라 RQ2 의 nested 강한 주장으로 병합), RQ5 는 robustness 검증이다. (harm-avoidance 대안설명은 NN 지표 정의가 자체적으로 차단하므로 별도 harm-strata RQ 불필요 — RQ4 폐기.)
+**핵심 thesis (인과 주장 없음 — 2026-05-17 재정의):** 본 논문은 "패널 불일치가 omission bias 의 *원인*" 이라고 주장하지 *않는다*. 대신 네 갈래로 기여한다 — (1) **구축 검증 (RQ1)**: high-amb 시나리오에서 philosophy-disagreement filter 가 random sampling 보다 framing-invariant omission bias(NN)를 더 잘 노출하는가 → 구축법이 무선 대비 부가가치가 있음을 보이는 것이 본문 spine. (2) **충돌-유형 구조 (RQ2, 서술)**: 모델별로 어떤 철학-충돌 유형에서 OBR 이 강한가 — 인과가 아니라 핫스팟 식별, RQ3/RQ4 입력. (3) **모델 도덕지문 (RQ3, 핵심)**: 모델이 frame-consistent 답을 한 시나리오에서 어느 철학 진영과 일치하는지 + 편향율 → "GPT 는 공리주의-일치 60%, 단 NN 35%" 식의 모델 도덕성향 프로파일. (4) **완화 (RQ4 통합)**: 5-철학 *균형* 주입(MAD, 단일아님) vs base 가 편향·지문을 어떻게 바꾸나, 철학중립 기법(자기찬반·결정장부·동시제시)과 비교. 완화는 별도 실험이 아니라 RQ4 의 comparator 묶음이다. 구판의 단일-철학 oracle 주입(C2/C3) 인과 실험은 폐기 — 한 철학을 정답으로 주입하는 철학적 방어 불가 + 그것은 조작 불가능한 *원인*이 아니라 *매개*를 건드리는 한정 steerability 주장이므로 인과 closure 를 못 만든다. RQ5(NN vs YY 분리)는 robustness. (harm-avoidance 대안설명은 NN 정의가 자체 차단 — 별도 harm-strata RQ 불필요, 구 RQ4 폐기 유지.)
 
 ---
 
@@ -37,18 +39,21 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 
 | RQ | 질문 | 정량 측정 / 가설 |
 |----|------|------------------|
-| **RQ1** | 각 평가 모델은 paired mirror-frame 시나리오에서 **얼마나 자주** framing-invariant inaction (= NN 응답) 을 보이는가? | per-model **overall OBR** = #{scenarios with NN} / #{scenarios with both frames answered}. PNAS Cheung+ 와 비교; H1: 모델 간 차이가 통계적으로 유의 (proportions test, Bonferroni-corrected pairwise). |
-| **RQ2** (RQ2a + RQ2b 병합 — 한 RQ 의 nested 주장) · **실측 구조는 §3.8 참조 (util-vs-consensus 주축 + 비공리주의 부차축; 옛 "다양한 pair 균등분포" 가정은 데이터로 기각)** | conflict-typed OBR 구조: (a) 시나리오의 철학-충돌 유형이 평가 모델의 OBR 을 예측하는가 — 즉 모델 내 OBR-by-pair profile 이 *비평탄* 한가 (주축 vs 부차축, 부차축 내부)? (b) 그 profile 이 *모델마다 다른가* (model-specific signature)? **(a) 는 spine 의 예측 절 (필수), (b) 는 spine 강화 보너스 (실패 허용 — (b) 실패해도 (a)+E7 로 spine 성립).** | **RQ2a:** per-(model × conflict pair) cell OBR; 모델 내 conflict pair 간 χ² of independence + post-hoc top-vs-bottom z-test (Bonferroni). H2a: ≥1 모델에서 conflict pair 간 OBR spread ≥ 0.15. **RQ2b:** per-model OBR-by-pair profile vector → 모델×모델 cosine matrix + permutation test (모델 라벨 셔플 5,000회). H2b: ≥1 모델쌍 profile cosine < 0.8. *RQ2b 는 RQ2a 가 통과해야 의미 (평탄하면 profile 비교 무의미) — 그래서 별개 RQ 가 아니라 RQ2 의 nested 강한 주장.* |
-| **RQ5** | omission bias 가 **action bias** ((Y,Y) 응답, frame-invariant *action* 선호) 와 분리되는가? 모델이 NN 을 많이 하는 conflict pair 와 YY 를 많이 하는 conflict pair 가 다른가? | per-(model × pair) 의 YY rate 도 동일 schema 로 측정. NN rate vs YY rate scatter; H5: NN rate 와 YY rate 가 음의 상관 (모델이 한쪽으로 치우치는 경향) 또는 무상관 (둘이 독립된 phenomenon). |
+| **RQ1** (구축 검증 — spine) | high-amb 시나리오에서 **philosophy-disagreement filter 가 random sampling 보다 framing-invariant omission bias(NN)를 더 잘 노출**하는가? | filtered set (`label_status=="labeled"`, ≈218) vs 비-filtered 보완집합에서 동수 random sample. per-model OBR=#{NN}/#{both-answered}. **H1: `OBR(filtered) − OBR(random) > 0`, 모델 전반 일관 (Wilcoxon signed-rank one-sided, 모델 가로질러).** 보조 baseline = 전체에서 동수 random. |
+| **RQ2** (분석 — 서술, 인과 아님) · **실측 구조 §3.8 (util-vs-consensus 주축 + 비공리주의 부차축)** | 모델별로 어떤 철학-충돌 유형에서 OBR 이 강한가 — 모델 내 OBR-by-pair 가 *비평탄* 한가 (주축 vs 부차축, 부차축 내부)? 핫스팟 식별용, RQ3/RQ4 입력. | per-(model × conflict pair) cell OBR; `scenario_id` random intercept mixed-effects (다중 cell 기여 → §3.6) + post-hoc top-vs-bottom z. **H2: ≥1 모델에서 conflict pair 간 OBR spread ≥ 0.15.** directional 아님, 서술. |
+| **RQ3** (분석 — ★핵심, 모델 도덕지문) | 모델이 frame-consistent 답을 한 시나리오에서 *어느 철학 진영과 일치*하는가 + 편향율은? | (model,scenario) tuple: **YN→ 그 시나리오 `yn_phils` 각 +1, NY→ `ny_phils` 각 +1, NN/YY→ non-aligned(=편향)**. 모델별 5-철학 leaning profile + 편향율. **H3: ≥1 모델 profile 이 null(패널 base rate) 대비 유의 (permutation 5,000회 p<0.05) AND 모델 간 profile cosine 행렬 ≥1 쌍 < 0.85** (구 RQ2b signature 흡수). |
+| **RQ4** (분석 = 완화, 통합) | **5-철학 *균형* 주입(MAD, 단일아님) vs base** 가 편향·도덕지문을 어떻게 바꾸나; 철학중립 label-free 완화는 NN 을 frame-consistent 로 줄이나? | per (model, condition) exact McNemar on (NN_M0, NN_Mk), credited = `NN→{YN,NY}`만 (NN→YY action-bias 치환 불인정). **H4: {M2,M3,M3b,M4} 중 ≥1 이 top-2 high-OBR 모델에서 Bonferroni 후 credited ΔNN 유의 AND M1(generic CoT) 초과.** 보조: M4(철학 anchoring) vs M3/M3b(중립) 비교. |
+| **RQ5** (robustness) | omission bias 가 **action bias** ((Y,Y), frame-invariant *action* 선호) 와 분리되는가? | per-(model × pair) YY rate 동일 schema. NN vs YY scatter; H5: NN-YY Spearman ρ 의 음/무 상관 (둘이 동일 phenomenon 이라는 null reject). |
 
-> **RQ4 (harm asymmetry stratification) 폐기 (2026-05-16).** 사유: (1) harm_asymmetry 도출이 MoralChoice 10 컬럼의 *동등가중 개수 합* 에 의존 — 살인 1개 = 약속위반 1개로 conflate, 하필 두 액션이 비등한 high-ambiguity 셋에서 거의 다 symmetric 으로 뭉개지고 `"No Agreement"` 가 symmetric 쪽으로 편향. 흔들리는 지표는 reviewer 의 공격 표면이 되어 무방비보다 나쁨. (2) "OBR 이 단순 harm 회피 아니냐" 반박은 **NN 지표 정의 자체가 이미 차단** — 합리적 harm 회피자는 프레임 무관 *같은 outcome* (= frame-consistent YN/NY) 을 고르지만, NN 은 프레임마다 *다른 outcome* 을 고른 것 (무조건 "no"). NN 인 순간 outcome 추종이 아님이 정의상 따라오므로 harm stratification 없이 conceptual defense 가 성립. → harm 3-strata 분석 전면 제거, 관련 E4·F5·검증 임계·pre-registration 항목 삭제.
+> **RQ4 (구 harm asymmetry stratification, 2026-05-16 폐기) 의 번호는 2026-05-17 재정의로 신규 RQ4(완화 통합)에 재배정.** 구 harm-strata 폐기 사유는 유지: harm_asymmetry 가 MoralChoice 10 컬럼 동등가중 개수 합으로 살인=약속위반 conflate·high-amb symmetric 뭉갬·No-Agreement 편향 → 신뢰 불가. + "OBR 이 단순 harm 회피 아니냐" 반박은 **NN 정의 자체가 차단** (NN 은 프레임마다 *다른* outcome → outcome 추종 아님). harm 컬럼은 raw provenance 로만 잔류, §7 Limitations 에 1문단 conceptual defense.
 
-> **RQ 우선순위 (spine 부각용 — 본문에서 동급 배치 금지):**
-> - **Spine (본문 전면):** RQ2a (충돌유형 → OBR *예측*) → E7 C2/C3 (oracle 인과 probe — 패널 축이 *원인*임 입증·상한선, 배포 아님) → E7 C1/C4 (label-free 배포 — 상한선의 ≥50% 회수, actionable). 이 arc 가 논문. RQ2b (model-specific signature) 는 spine 강화 보너스, 실패 허용.
-> - **Supporting (본문, spine 보조):** RQ1 (cross-model OBR — PNAS 확장·warm-up).
-> - **Robustness (부록/보조 분석):** RQ5 (NN vs YY 분리).
+> **RQ 우선순위:**
+> - **Spine (본문 전면):** RQ1 (구축법이 무선 대비 omission bias 를 더 잘 노출 — 벤치마크 가치의 직접 증거).
+> - **분석 핵심 (본문):** RQ3 (모델 도덕지문 + 편향율), RQ2 (충돌-유형 구조, RQ3/RQ4 입력).
+> - **완화 (본문, RQ4 통합):** RQ4 = M0–M4 comparator 묶음. 별도 E7 실험 아님.
+> - **Robustness (부록/보조):** RQ5 (NN vs YY 분리).
 >
-> **Mitigation 은 prompt-level 로 확정** (sampling/training 제외). 상세 condition (C0 baseline / C1 simultaneous-framing PNAS replication / **C2 yn-persona injection** / **C3 ny-persona injection** / C4 multi-phil consensus / C5 generic CoT), 통계 설계, preregistered hypothesis (H7a–H7f; C2/C3=oracle 인과 probe, C1/C4=label-free 배포) 는 supplement plan `~/.claude/plans/research-plan-v4-giggly-nebula.md` 에 동결. E7 은 분석 (RQ1·RQ2·RQ5) *이후* 실행하되, 그 결과가 비어 있다는 의미가 아니라 spine 의 인과 절반 + label-free 배포 절을 담당.
+> **완화는 RQ4 안에 통합** (sampling/training 제외, prompt-level). 조건 = **M0 baseline / M1 generic CoT / M2 두-프레임 동시(양쪽 yes/no, NN 측정가능) / M3 자기찬반 / M3b 결정장부 / M4 철학5 MAD**. 정확한 prompt·통계·H1–H4·NN-exit 분해·RQ3 fingerprint 절차·비용은 supplement plan `~/.claude/plans/research-plan-v4-giggly-nebula.md` (전면 개정 2026-05-17) 에 동결. **구판 C0–C5 + C2/C3 oracle 주입·label-free 회수율(H7f)·키스톤(scramble/cross-over) 전부 폐기.**
 
 ---
 
@@ -125,25 +130,32 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 - **비공리주의끼리 충돌은 *부차축* 으로 실재.** labeled 218 중 ~119 (55%) 가 ≥1 개의 non-util×non-util 충돌 포함 (deon-care 83, virtue-care 58, deon-contract 56, care-contract 55, deon-virtue 33, virtue-contract 11 — undirected, descriptive). 단 lowest-index primary 가 가렸을 뿐 데이터엔 존재 → 전체 `conflicts` 나열로 보존.
 - **프롬프트·doing/allowing-line 불변:** thin v1 (with-line, 220) / no-line (218) / interventionist v2 (198) 세 변형 모두 같은 구조 → 구조는 프롬프트 아티팩트 아님 (robustness, appendix).
 
-**RQ2 에의 함의:** 구 RQ2 가 가정한 "다양한 conflict-pair type 이 골고루 분포" 는 *데이터로 기각*. 사용 가능 cell 은 사실상 (a) util-vs-consensus 주축 1개 + (b) 6종 비공리주의 부차축 (cell 8–83). 따라서:
-- **RQ2a 재진술:** "OBR-by-pair 가 비평탄한가" 를 **"util-vs-consensus 축 vs 비공리주의 부차축 사이, 그리고 부차축 내부에서 모델 OBR 이 유의하게 다른가"** 로 구체화. 주축은 PNAS 확장 (RQ1·spine 예측), 부차축은 v4 고유 신규 신호.
-- **RQ2b (model-specific signature):** cell 다양성이 제한적 (주축 1 + 부차축 6) 이므로 profile vector 는 7-dim 으로 축소; permutation 검정력 약화 가능 → §10 임계를 보수적으로 (cosine < 0.85, 부차축 cell n ≥ 8 인 것만) 재설정. 실패해도 spine 불변 (이미 nested 보너스).
-- **fallback (§10 negative-result):** 주축만 신호 있고 부차축 평탄이면 → "omission bias 의 도덕적 fault line 은 본질상 1차원 (consequentialist vs non-consequentialist consensus) 이며 PNAS 축으로 환원된다" 가 그 자체로 publishable finding (v4 의 novelty 는 *부차축의 모델별 발현* 으로 축소되나 spine=RQ2a+E7 은 주축으로도 성립).
+**RQ2/RQ3 에의 함의 (2026-05-17 재정의):** 구 RQ2 가 가정한 "다양한 conflict-pair type 이 골고루 분포" 는 *데이터로 기각*. 사용 가능 cell 은 (a) util-vs-consensus 주축 1개 + (b) 6종 비공리주의 부차축 (cell 8–83). 따라서:
+- **RQ2 (서술):** "OBR-by-pair 가 비평탄한가" 를 **"util-vs-consensus 주축 vs 비공리주의 부차축 사이, 그리고 부차축 내부에서 OBR 이 유의하게 다른가"** 로 구체화. 인과 아님 — 핫스팟 식별. 주축은 PNAS 축 재현, 부차축은 v4 고유 신호.
+- **RQ3 (모델 도덕지문):** profile 은 "frame-consistent 답이 YN→yn_phils / NY→ny_phils 정렬" 로 산정 (5-철학 leaning vector) + non-aligned(NN/YY) 편향율. 모델 간 cosine 행렬은 구 RQ2b signature 를 흡수. cell 다양성 제한으로 §10 임계 보수적 (cosine < 0.85).
+- **fallback (§10 negative-result):** 주축만 신호·부차축 평탄이면 → "omission bias 의 도덕적 fault line 은 본질상 1차원 (consequentialist vs non-consequentialist consensus), PNAS 축으로 환원" 이 그 자체로 publishable. RQ1(구축 검증)·RQ3(지문)·RQ4(완화)는 부차축 평탄과 무관하게 성립하므로 spine 무손상.
 
 ---
 
 ## 4. 평가 설계
 
-### 4.1 평가 모델 — 5-7 개 cross-vendor mix
+### 4.1 평가 모델 — 5 개 cross-vendor (실행 완료)
 
-선정 기준: **모델 종류 별 비교** 가 RQ1·RQ2b 의 핵심이므로 vendor / size / 학습 paradigm 이 다양해야 함.
+선정 기준: **모델 종류 별 비교** 가 RQ1(filter>random, 모델 전반)·RQ3(모델 도덕지문 cosine) 의 핵심이므로 vendor / size / 학습 paradigm 이 다양해야 함.
 
-- **OpenAI:** GPT-5-mini, GPT-4.1-mini (기존 reframe/panel 에 쓴 모델과 같은 family, 비교 anchor).
-- **Anthropic:** Claude 4.5 Haiku, Claude 4.7 Sonnet.
-- **Google:** Gemini 2.0 Flash, Gemini 2.5 Pro (예산 허용 시).
-- **Open-source mid-size:** Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct (자체 inference 가능, replicability).
+**실제 실행된 5개 모델 (E1/E2 완료, 2026-05-17 — `outputs/experiments/0517/` 기준):**
 
-총 5-7 개 모델. 모두 OpenRouter / 자체 vLLM 으로 통일 호출.
+| 모델 (provider string) | vendor | overall OBR | 비고 |
+|---|---|---|---|
+| `meta-llama/llama-3.1-8b-instruct` | Meta (open) | 0.57 | high-OBR |
+| `google/gemma-3-12b-it` | Google (open) | 0.55 | high-OBR |
+| `openai/gpt-4o-mini` | OpenAI (closed) | 0.45 | mid |
+| `qwen/qwen3.5-9b` | Alibaba (open) | 0.26 | mid |
+| `google/gemini-2.0-flash-001` | Google (closed) | 0.07 | low-OBR (control) |
+
+전부 OpenRouter gateway 호출. cross-vendor (OpenAI / Google / Meta / Alibaba) + open vs closed + size 다양 → RQ1(filter>random, 모델 전반)·RQ3(모델 도덕지문 cosine) 입력 충족. **E7(RQ4 완화) model 선정 = 위 OBR 기준 top-2 high (llama-3.1-8b, gemma-3-12b) + 1 low control (gemini-2.0-flash).**
+
+위 5개로 E1/E2 실행 완료 (각 217 시나리오 = labeled set, 양 frame). 호출 날짜·정확한 provider model string 은 `outputs/experiments/0517/.../eval_tuples.jsonl` 에 기록됨. closed model(gpt-4o-mini, gemini-2.0-flash) 의 silent 업데이트가 재현성을 깨므로 §11 pre-registration freeze 시 호출 snapshot 명시.
 
 ### 4.2 평가 protocol
 
@@ -159,75 +171,79 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 - **ABR (action bias rate, RQ5):** = #{YY} / N.
 - **FCR (frame-consistent rate):** = #{YN+NY} / N. 시나리오의 outcome 일관성을 유지한 비율 — 1 − OBR − ABR.
 - **Refusal rate, parse-failure rate:** 정상 답변 비율 sanity check.
-- **per-(model × pair) OBR profile vector:** 각 모델에 대해 conflict pair 를 정렬한 OBR 벡터 (dim = #{labeled conflict pair types}). RQ2b 의 cosine similarity / clustering 입력.
+- **per-model 도덕지문 (RQ3):** (model,scenario) tuple 을 `YN→yn_phils 각 +1 / NY→ny_phils 각 +1 / NN·YY→non-aligned` 로 집계 → 5-철학 leaning profile (raw + size-norm) + non-aligned 비율(편향율). 모델 간 cosine 행렬은 구 RQ2b signature 흡수. 입력 = `data/panel_outputs/labels_<panel-stem>.jsonl`.
+- **NN-exit 분해 (RQ4 완화 공통):** M0=NN 시나리오의 각 condition tuple → `→{YN,NY}` credited(진짜 교정) / `→YY` flagged(action-bias 치환, 불인정) / `→NN` 무변화. primary = `Pr(M0=NN→{YN,NY})`. 프레임별 marginal yes-rate 동시 보고(전역 shift confound).
 
 ### 4.4 통계 검정
 
-- **RQ1 모델 간 overall OBR 차이:** Z-test for two proportions, pairwise, Bonferroni 보정.
-- **RQ2a 모델 내 conflict pair 간 OBR 차이:** χ² of independence on (conflict pair × {NN, ¬NN}) per model; post-hoc 으로 top-OBR pair vs bottom-OBR pair z-test.
-- **RQ2b 모델 signature 차이:** model A 의 OBR-by-pair profile vs model B 의 그것의 cosine similarity; permutation test (5,000 회 — 모델 라벨 셔플 후 profile 재계산) 로 관찰 cosine 의 random baseline 비교. *(RQ2a 통과 조건부 — RQ2 의 nested 강한 주장)*
-- **RQ5 NN vs YY 분리:** per cell 의 NN rate, YY rate scatter + Spearman ρ across pairs within model.
-- *(RQ4 의 3-way log-linear (model × conflict pair × harm stratum) 은 폐기 — ~400 labeled / ~336 cell ≈ cell 당 1, interaction term 검정력 0. harm 지표 자체도 신뢰 불가. 2026-05-16.)*
+- **RQ1 filter > random:** filtered vs 동수 random 의 per-model OBR; 모델 가로질러 **Wilcoxon signed-rank one-sided** (`OBR_filtered > OBR_random`). effect = OBR 차 + 1,000-iter bootstrap 95% CI.
+- **RQ2 모델 내 conflict pair 간 OBR 차이 (서술):** `scenario_id` random intercept mixed-effects (한 시나리오 다중 cell 기여 → cluster, §3.6); post-hoc top-OBR vs bottom-OBR pair z. directional 아님.
+- **RQ3 모델 도덕지문:** leaning profile vs null (패널에서 각 철학이 yn∪ny 에 등장하는 base rate) — permutation 5,000 회. 모델 간 profile cosine 행렬 + permutation (모델 라벨 셔플).
+- **RQ4 완화:** per (model, Mk≠0) exact **McNemar** on (NN_M0, NN_Mk) one-sided(NN 감소), credited 분해 적용. primary {M2,M3,M3b,M4}×model **Bonferroni**, M1·judge-variant secondary **FDR-BH**. credited ΔNN 1,000-iter scenario-bootstrap CI.
+- **RQ5 NN vs YY 분리:** per cell NN rate vs YY rate scatter + Spearman ρ across pairs within model.
+- *(구 RQ4 3-way log-linear harm-strata 폐기 유지 — 2026-05-16.)*
 
 ### 4.5 Power / sample size
 
 - 필터 통과 시나리오 수 = E[total × (1 − unanim_rate − incomplete_rate)]. 13-scenario pilot (CLAUDE.md panel 출력) 에서 84.6% pass, 7.7% unanimous. 661 scenarios → 약 ~500 labeled 추정 (실제는 paradigm-misfit 제외 후 더 적을 수 있음, 400+ 목표).
 - conflict pair 종류: 5 philosophies → max 4×4 = 16 ordered pair (yn 4 × ny 1 max). 실제로는 한 pair 에 ~10-50 시나리오 분포 예상.
-- 한 cell 에 OBR 차이 0.15 를 5% 유의·80% 검정력으로 잡으려면 cell 당 n ≥ 174 (z-test for 2 proportions, p₁=0.2 vs p₂=0.35). 본 plan 의 cell 당 표본 (~20-40) 으로는 *큰 차이* (≥ 0.25) 만 잡힌다 — RQ2a/RQ2b 의 H 임계를 그 수준으로 보수적으로 설정.
+- 한 cell 에 OBR 차이 0.15 를 5% 유의·80% 검정력으로 잡으려면 cell 당 n ≥ 174 (z-test for 2 proportions, p₁=0.2 vs p₂=0.35). 본 plan 의 cell 당 표본 (~20-40) 으로는 *큰 차이* (≥ 0.25) 만 잡힌다 — RQ2(서술)·RQ3 의 H 임계를 그 수준으로 보수적으로 설정.
 
 ---
 
 ## 5. 실험
 
-### E1 — RQ1: Per-model overall OBR
+> 실험 번호는 cross-ref 보존 위해 E1/E2/E3/E5/E6/E7 유지 (E4 결번). 매핑: **E1=RQ1, E2=RQ2, E3=RQ3, E5=RQ5, E7=RQ4(완화)**.
 
-- 5-7 모델 × `omission-bench-v1.jsonl` 전체 × 2 frame → tuple 산출 → overall OBR 표.
-- Side metrics: ABR, FCR, refusal, parse-fail.
-- 시각화: bar chart with 95% CI (Wilson interval). Cheung+ 2025 PNAS 의 GPT-4 baseline 과 비교.
-- 산출: `outputs/experiments/E1_overall_OBR/per_model.csv`, `bar_chart.png`.
+### E1 — RQ1: filter > random (구축 검증, spine)
 
-### E2 — RQ2a: Per-model OBR by conflict pair (spine 예측 절)
+- 5-7 모델 × **두 세트** × 2 frame → tuple → per-model OBR(=NN율).
+  - filtered = `omission-bench-v1.jsonl` (label_status=="labeled", ≈218).
+  - random = 같은 high-amb 풀의 비-filtered 보완집합에서 동수 무작위 (seed=42). 보조 = 전체에서 동수 random.
+- 모델 가로질러 `OBR(filtered) − OBR(random)` Wilcoxon signed-rank one-sided. side metrics: ABR/FCR/refusal/parse-fail.
+- 시각화: 모델별 OBR(filtered vs random) paired bar + 95% CI. Cheung+ 2025 PNAS GPT-4 baseline 참조.
+- 산출: `outputs/experiments/E1_filter_vs_random/{per_model.csv, paired_bar.png, wilcoxon.txt}`.
 
-- E1 의 raw tuple 데이터를 `conflict_pairs` 라벨로 join → per (model × pair) cell 계산.
-- 시각화: heatmap, 행 = 모델, 열 = conflict pair (정렬: 평균 OBR 내림차순). cell = OBR + 표본 크기.
-- 모델별로 conflict pair 간 OBR 차이 χ² 표.
-- 산출: `outputs/experiments/E2_OBR_by_conflict/heatmap.png`, `model_chi2_table.csv`, `per_cell_OBR.csv`.
+### E2 — RQ2: Per-model OBR by conflict pair (서술, 핫스팟)
 
-### E3 — RQ2b: Model signature analysis (RQ2 의 nested 강한 주장, RQ2a 조건부)
+- E1 의 filtered tuple 을 `conflict_pairs` 라벨로 join → per (model × pair) cell OBR. `scenario_id` cluster mixed-effects.
+- 시각화: heatmap, 행 = 모델, 열 = conflict pair (평균 OBR 내림차순). cell = OBR + n.
+- 산출: `outputs/experiments/E2_OBR_by_conflict/{heatmap.png, model_mixedeffects_table.csv, per_cell_OBR.csv}`.
 
-- 각 모델의 OBR-by-pair profile vector 만들고:
-  - 모델 × 모델 cosine matrix → dendrogram (hierarchical clustering, average linkage).
-  - 같은 vendor (OpenAI GPT-5-mini vs GPT-4.1-mini), 같은 size (Qwen-7B vs Llama-8B) 끼리 가까운지 확인.
-- Permutation test: 모델 라벨 셔플 5,000 회 → cosine 분포의 5% / 95% 임계와 관찰값 비교.
-- 산출: `outputs/experiments/E3_signatures/cosine_matrix.csv`, `dendrogram.png`, `permutation_pvalue.txt`.
+### E3 — RQ3: Model moral fingerprint (★핵심)
 
-### E4 — (폐기, 2026-05-16)
+- (model,scenario) tuple → `YN→yn_phils 각 +1 / NY→ny_phils 각 +1 / NN·YY→non-aligned` 집계 (`data/panel_outputs/labels_*.jsonl` join). 모델별 5-철학 leaning profile (raw+size-norm) + 편향율.
+- profile vs null(패널 base rate) permutation 5,000회; 모델 간 profile cosine 행렬 + dendrogram (같은 vendor/size 근접 확인) + 모델-라벨-셔플 permutation.
+- 산출: `outputs/experiments/E3_fingerprint/{profile_per_model.csv, cosine_matrix.csv, dendrogram.png, permutation_pvalue.txt}`.
 
-- RQ4 (harm asymmetry stratification) 폐기에 따라 E4 제거. E5/E6/E7 번호는 cross-reference 보존 위해 그대로 유지. 사유는 §2 RQ4 폐기 note 참조.
+### E4 — (결번, 2026-05-16 구 harm-strata 폐기)
 
-### E5 — RQ5: NN vs YY 분리
+- E5/E6/E7 번호는 cross-reference 보존 위해 유지. 사유 §2 note.
 
-- 같은 cell 단위로 NN rate, YY rate scatter.
-- 모델 내 conflict pair 간 Spearman ρ(NN, YY).
-- 추가: low-stake control set 에서 NN, YY 가 모두 낮은지 sanity (omission bias 가 high-stake artifact 가 아니라는 증거 또는 그 반대).
-- 산출: `outputs/experiments/E5_NN_vs_YY/scatter_per_model.png`, `spearman.csv`.
+### E5 — RQ5: NN vs YY 분리 (robustness)
 
-### E6 — 인간 anchor (옵션, 분량 압축)
+- 같은 cell 단위 NN rate vs YY rate scatter; 모델 내 conflict pair 간 Spearman ρ(NN,YY).
+- 추가: low-stake control set 에서 NN·YY 모두 낮은지 sanity.
+- 산출: `outputs/experiments/E5_NN_vs_YY/{scatter_per_model.png, spearman.csv}`.
 
-- Prolific N≈100 (representative US). labeled 시나리오에서 30-50 random sample × paired frame.
-- 인간 OBR baseline + 모델과의 격차 표.
-- 본 plan 의 *반드시* 항목은 아님 — RQ1-RQ5 가 모델 비교 자체가 main contribution. 인간 anchor 는 reviewer 가 요구하면 추가.
+### E6 — 인간 anchor (옵션)
 
-### E7 — Mitigation (★ spine 의 인과 절반 + label-free 배포, prompt-level 확정)
+- Prolific N≈100. labeled 시나리오 30-50 random × paired frame. 인간 OBR baseline + 모델 격차.
+- 필수 아님 — reviewer 요구 시 추가.
 
-- **상세 설계 동결:** `~/.claude/plans/research-plan-v4-giggly-nebula.md` (2026-05-15, 2026-05-17 oracle/label-free 분리 갱신). 본 절은 요약.
-- **6 conditions 을 3 역할로 명시 분리 (2026-05-17, deployability 비판 흡수):**
-  - **Oracle 인과 probe (배포 아님):** **C2** yn-persona inject, **C3** ny-persona inject. 시나리오별 `min(yn/ny_phils)` 라벨(구축-시 패널) 필요 → 배포 불가. 역할 = philosophy-conflict 축이 bias 의 *원인·방향성*임을 knockout-style 로 입증 + 제거 가능 bias 의 **상한선**. *deployable 방법으로 주장 안 함.*
-  - **Label-free 배포 후보 (actionable):** **C1** simultaneous-framing (PNAS replication, 라벨 무관), **C4** multi-philosophy consensus (라벨 무관, 임의 질의 적용 가능). 역할 = C2/C3 상한선의 일부(목표 ≥50%) 회수 → 실무 mitigation.
-  - **Control:** **C0** baseline, **C5** generic CoT (panel vs 일반 reflection 분리).
-- **모델:** E1 결과 기반 top-2 high-OBR + 1 low-OBR control (3개). **시나리오:** E2 top-OBR cell 에 stratified (§3.8 의 주축/부차축 cell 우선), 모델당 ≤120. **비용:** ~$20, 반나절.
-- **Preregistered H7a–H7f** (H7b = C2/C3 인과·상한선, H7f = C1/C4 label-free 회수율 ≥50%) + falsifiable: C2/C3 ≤ C5 면 panel-anchoring 기각; C2/C3 강해도 H7f 실패면 "인과 축 확인, 배포는 future work (per-query 경량 패널)" 로 scope 정직 축소. 상세는 supplement plan §Pre-registered hypotheses.
-- **제외 (명시적):** sampling-level (best-of-N), training-level (LoRA) 는 본 plan scope 밖 — 후속 short paper / journal extension. **C2/C3 의 per-query 배포화 (추론-시 경량 패널)** 도 future work.
+### E7 — RQ4: Mitigation (5-철학 균형주입 + 철학중립 label-free, 통합)
+
+- **상세 설계·정확한 prompt 동결:** `~/.claude/plans/research-plan-v4-giggly-nebula.md` (전면 개정 2026-05-17). 본 절은 요약.
+- **조건 = M0–M4 (전부 label-free, within-subject paired):**
+  - **M0** baseline / **M1** generic CoT (control — "단순 reflection 환원" 분리).
+  - **M2** 두-프레임 동시 + CoT, 각 frame yes/no (NN 측정 가능; 구 C1 의 Outcome 택1 폐기).
+  - **M3** 자기 찬반 (반대답 최강근거 1문장 후 재응답) — 철학중립 배포 핵심.
+  - **M3b** 결정 장부 (yes/no 결과 각 1문장 서술 후 답) — 편향 메커니즘 직격.
+  - **M4** 철학 5 MAD (5철학 에이전트 R1독립→R2교차→다수결) = RQ4 의 "5-철학 *균형* 주입"; 구 C4(다관점 단일고려)를 강한 형태로 흡수. 단일-철학 oracle 주입 아님.
+- **모델 (E1 실측 확정):** top-2 high-OBR = `llama-3.1-8b-instruct`(0.57)·`gemma-3-12b-it`(0.55), low-OBR control = `gemini-2.0-flash-001`(0.07). **시나리오:** E2 top-OBR cell stratified, 모델당 ≤120 (M4 는 비용상 축소 subset).
+- **NN-exit 분해 공통:** credited `NN→{YN,NY}` 만 인정, `NN→YY` action-bias 치환 flag·불인정. **Preregistered H1–H4** (H4 = {M2,M3,M3b,M4} 중 ≥1 Bonferroni 후 credited ΔNN 유의 AND M1 초과; 보조 M4 vs M3/M3b = 철학 anchoring 필요성). 전부 실패 → "prompt-level 완화 한계, training-level 후속" negative reframe.
+- **비용:** M4 가 driver (≈20콜/시나리오). subset/라운드 제한 또는 C4-다운그레이드 시 ~$30–40, ~1일.
+- **제외 (명시):** 단일-철학 oracle 주입(구 C2/C3)·인과 주장·키스톤(scramble/cross-over/H7f) 폐기; sampling/training-level 후속; B(철학없는 찬반팀)는 M3 와 역할중복으로 미채택.
 
 ---
 
@@ -235,21 +251,21 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 
 | 섹션 | 내용 | 분량 |
 |------|------|------|
-| 1. Introduction | PNAS thesis (framing-invariant omission bias) + Scherrer (model cluster) → 본 paper 의 contribution **2개**: (1) 2-stage panel conflict-typed benchmark 구축법, (2) ★ 패널 불일치 = omission bias 의 *조작 가능한 인과 축* (예측 RQ2a + 인과확인 E7 C2/C3 oracle probe + label-free 배포 C1/C4) | 1 p |
+| 1. Introduction | PNAS thesis (framing-invariant omission bias) + Scherrer (model cluster) → contribution **3개** (인과 주장 없음): (1) 2-stage panel conflict-typed benchmark 구축법 **+ filter>random 검증 (RQ1)**, (2) 모델 도덕지문 + 충돌-유형 구조 (RQ3/RQ2), (3) 철학중립 label-free 완화 + 5-철학 균형주입 (RQ4) | 1 p |
 | 2. Background | MoralChoice, Cheung 2025, 5 도덕철학 framework, mirror frame paradigm | 0.75 p |
 | 3. Benchmark | mirror frame 생성 + 2-stage philosophy panel (filter + label) | 1.25 p |
 | 4. Evaluation setup | 5-7 모델, tuple-based OBR metric, conflict pair as analysis unit | 0.5 p |
-| 5. Results | **E2 (conflict pair → OBR, spine 예측) + E7 (C2/C3 oracle 인과 probe·상한선 → C1/C4 label-free 배포 회수)** 을 전면; E1 (overall, warm-up) · E3 (signature, supporting) · E5 (NN/YY 분리, robustness) 보조 | 3 p |
-| 6. Discussion | 모델 signature 가 vendor / training 추정에 시사하는 바, E7 의 인과 결론(C2/C3) 과 label-free 배포 회수율(C1/C4) 의 구분·함의, 순환논증 + oracle-label 방어, limitations | 1 p |
-| 7. Limitations & Ethics | **순환논증 정면 방어** (별-모델 labeler / 라벨≠측정량 / C4·C5 control) + **harm-avoidance 대안설명 차단** (NN 정의상 frame 마다 다른 outcome → outcome 추종 아님; harm-strata RQ 불필요) + conflict pair 라벨러 = single LLM, philosophy 단순화, English/US-centric, IRB | 0.4 p |
-| 8. Conclusion | 한 줄: "패널 불일치는 omission bias 를 예측하고 동시에 처방하는 동일 기구다" | 0.25 p |
+| 5. Results | **E1 (filter>random, spine 검증) + E3 (모델 도덕지문) + E7 (RQ4 완화: 철학중립 ΔNN credited + 5-철학 MAD + 지문 이동)** 전면; E2 (충돌-유형 구조, 핫스팟) · E5 (NN/YY, robustness) 보조 | 3 p |
+| 6. Discussion | 모델 도덕지문이 vendor/training 에 시사하는 바, 완화기법 간 비교(철학 anchoring 이 중립기법 대비 더 깎나)·NN→YY 치환 주의, 인과 미주장의 정직성, limitations | 1 p |
+| 7. Limitations & Ethics | **인과 미주장 명시** (단일-철학 주입 안 함 → oracle-label·순환논증 비판 원인소멸) + **harm-avoidance 차단** (NN 정의상 frame 마다 다른 outcome) + 패널 labeler = single LLM, philosophy 단순화, MAD 다수결=패널분포 confound, English/US-centric, IRB | 0.4 p |
+| 8. Conclusion | 한 줄: "철학-패널 disagreement 는 omission bias 를 더 잘 노출하고, 모델 도덕성향을 드러내며, 철학중립 prompt 로 완화 가능하다" | 0.25 p |
 
 **Key figures:**
-- F1: 파이프라인 개요 (mirror frame → 2-stage panel → conflict-labeled benchmark → model 평가 → OBR heatmap).
-- F2: E1 per-model overall OBR bar chart with CI.
-- F3: **E2 heatmap** model × conflict pair — 본 paper 의 visual key (spine 예측).
-- F4: **E7 mitigation** — C2/C3 oracle ΔNN(상한선) + directional shift, 그 옆에 C1/C4 label-free 회수율 bar (spine 인과+배포, F3 와 짝).
-- F5: E3 dendrogram of model signatures (supporting).
+- F1: 파이프라인 개요 (mirror frame → 2-stage panel → conflict-labeled benchmark → model 평가).
+- F2: **E1 filter vs random** per-model OBR paired bar + CI — spine 검증 visual key.
+- F3: **E2 heatmap** model × conflict pair (충돌-유형 구조, 핫스팟).
+- F4: **E3 모델 도덕지문** — 모델별 5-철학 leaning profile + 편향율 (핵심).
+- F5: **E7 완화** — model×condition credited ΔNN + NN-exit (NN→{YN,NY} vs NN→YY) + M4 하 지문 이동.
 - F6: E5 NN vs YY scatter (robustness).
 
 **Appendix:**
@@ -266,10 +282,10 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 |------|----------|
 | 2026-05-13 ~ 05-25 | (a) `paired_frames.jsonl` 661 scenario 전수 재생성 (v4 balanced SYSTEM_PROMPT + gpt-5 reasoning, $≈20). (b) `validate.py` iter 통과 (κ ≥ 0.7 in dual annotation). (c) paradigm-misfit manual exclusion list 확정. |
 | 2026-05-26 ~ 06-08 | Philosophy panel run (gpt-4.1-mini × 5 phil × 2 frame × N scenarios, T=0.0 n=1). `filter.py` → `label.py` → `omission-bench-v1.jsonl` v1 freeze. |
-| 2026-06-09 ~ 06-25 | **E1 + E2:** 5-7 모델 evaluation runs (OpenRouter + 자체 vLLM). per-cell OBR 표 + heatmap. |
-| 2026-06-26 ~ 07-08 | **E3 + E5:** signature cosine + permutation test, NN/YY scatter. (E4 harm-strata 폐기) |
+| 2026-06-09 ~ 06-25 | **E1 (RQ1 filter>random) + E2 (RQ2 충돌-유형):** 5-7 모델 evaluation runs (OpenRouter + 자체 vLLM). filtered vs random OBR + per-cell heatmap. |
+| 2026-06-26 ~ 07-08 | **E3 (RQ3 모델 도덕지문) + E5 (RQ5 NN/YY):** leaning profile + null permutation + cosine, NN/YY scatter. (E4 harm-strata 결번) |
 | 2026-07-09 ~ 07-20 | (옵션) **E6 인간 anchor** Prolific run + 분석. |
-| 2026-07-21 ~ 08-10 | Mitigation supplement (E7) 의 plan 작성 → 우선 1-2 후보만 pilot. |
+| 2026-07-21 ~ 08-10 | **E7 (RQ4 완화)** — supplement plan 동결 완료, M0+M1+M3b+M4 우선 pilot → full. |
 | 2026-08-11 ~ 08-25 | 논문 작성, 그림 6 종, appendix. |
 | 2026-08 (late) | ARR August commitment 경로. EMNLP 2026 long paper. |
 
@@ -287,12 +303,11 @@ PNAS 2025 (Cheung+) 는 LLM 에 *amplified omission bias* — 두 옵션의 outc
 | 5 philosophy 자체가 단일 모델 (gpt-4.1-mini) 위에서 잘 분리되지 않음 — system prompt 가 무시되어 모든 철학이 비슷한 답변 | 13-scenario pilot 에서 conflict pair 분포가 다양했음 (top: util vs deon 5건) → 분리는 어느 정도 됨. 631 전수 후 모니터; 분리 약하면 system prompt 톤 강화 + few-shot 추가 |
 | paired frame 자체가 OLD-design (legacy 661) 그대로 → 모든 후속 분석이 invalid input 위 | timeline week 1-2 의 reframe 전수 재생성이 모든 step 의 blocker. validate.py 통과 + dual κ 확보 까지 후속 step blocked |
 | 모델이 yes/no 외 형식으로 답변 (장문, refusal 등) → parse failure 가 OBR denominator 를 망가뜨림 | user prompt 에 "Answer exactly 'yes' or 'no', nothing else" 강제 + fallback 정규식. 모델별 parse fail rate ≥ 10% 면 그 모델 결과는 caveat 표기. open-source 모델은 chat template + EOS 강제로 보완 |
-| RQ2b 의 model signature 차이가 random baseline 수준 — 모든 모델이 거의 같은 OBR-by-pair profile | 그것 자체가 finding: "omission bias 의 conflict-pair 분포는 모델 architecture 와 무관한 universal pattern 이며, 단지 *전체 강도* 만 모델마다 다르다." spine 은 RQ2b 없이도 RQ2a(예측)+E7(처방)로 성립 — RQ2b 는 애초에 nested 보너스 주장이므로 실패해도 thesis 무손상, RQ1(전체 강도)+RQ2a+E7 중심으로 진술 |
+| RQ3 모델 도덕지문이 모델 간 거의 동일 — 모든 모델이 같은 leaning profile | 그것 자체가 finding: "철학 정렬은 모델 architecture 와 무관한 universal pattern, 단지 *편향율* 만 모델마다 다르다." spine 은 RQ1(구축 검증)이 담당하므로 RQ3 모델간 차이 실패해도 thesis 무손상 — 편향율 차이 + RQ1 + RQ4 중심 진술 |
 | YY (action bias) 가 거의 0 — 모든 모델이 어느 쪽으로든 inaction 으로 기우는 경향만 보임 | RQ5 의 분리 검정 실패. 그것 자체가 publishable: "LLM 의 frame-invariant bias 는 inaction 쪽으로만 발현하고 action 쪽으로는 발현하지 않는다 — PNAS thesis 강화" |
 | 예산 — 5-7 모델 × ~500 시나리오 × 2 frame ≈ 5,000-7,000 호출/모델. OpenAI/Anthropic 합쳐 ~$50-100 추정 | 부담 가능. open-source 모델은 vLLM self-host 로 zero cost |
-| Mitigation 이 없으면 reviewer 가 "no actionable contribution" 비판 | **해소됨** — E7 의 label-free C1/C4 가 배포 가능한 actionable 결과 (results 에 위치). C2/C3 는 인과·상한선 (actionable 주장 아님) |
-| **(★ fatal review 후보) C2/C3 oracle-label 의존 → "배포 불가, mitigation trivial" 비판** (사용자가 2026-05-17 제기) | 본문 정면 방어: (1) C2/C3 는 *deployable 방법이 아니라 knockout-style causal manipulation* — 통제 실험은 oracle 사용이 원칙적으로 정당, 역할은 philosophy-conflict 축의 *인과* 입증 + 제거 가능 bias 의 **상한선** 산출. (2) actionable 배포 주장은 라벨 불필요한 **C1/C4 (H7f, ≥50% 회수)** 가 전담 — 임의 신규 질의에 그대로 적용. (3) C2/C3 상한선이 있어야 C1/C4 회수율이 "전체 가능분의 몇 %" 로 해석됨 → 둘은 분리된 역할로 상호보완. §5 E7·§7 에 명시. 이 방어가 없으면 정확히 이 비판이 fatal review 로 회귀 |
-| **(★ fatal review 후보) 순환논증 비판** — "시나리오를 패널로 정의해놓고 그 패널로 고친다 = circular, 따라서 mitigation 효과는 trivial" | 본문에서 **정면 방어** (§7 Limitations + Methods 에 명시): (1) 패널 labeler (gpt-4.1-mini) 와 평가 모델이 *서로 다른 모델*, 패널은 평가 모델 출력을 한 번도 보지 않음. (2) 구축-시 라벨은 "어떤 철학이 frame-consistent 한가" 라는 *시나리오 속성*, mitigation 은 그 속성을 *다른 모델* 에 주입해 *행동 지표 (NN→YN/NY)* 가 바뀌는지를 측정 — 라벨과 측정량이 다른 공간. (3) C5 (generic CoT) 와 C4 (non-directional panel) 가 "패널 신호 특정성" 을 분리하는 control 로 순환성을 경험적으로 반박. |
+| Mitigation 이 없으면 reviewer 가 "no actionable contribution" 비판 | **해소됨** — RQ4 의 label-free M2/M3/M3b (자기찬반·결정장부·동시제시) 가 임의 질의 적용 가능한 actionable 완화 (results 전면). M4 는 5-철학 균형주입 비교 |
+| **(★ 구 fatal-review 2행 — 원인 소멸, 2026-05-17)** oracle-label 의존 + 순환논증 비판 (사용자 2026-05-17 제기) | **해소됨**: 단일-철학 oracle 주입(구 C2/C3) 인과 실험을 통째로 폐기 → 비판의 *원인 자체가 소멸*. 본문은 인과를 주장하지 않고, RQ1(filter>random)·RQ3(지문)·RQ4(label-free 완화)만 주장. §7 Limitations 에 "단일-철학 주입·인과 주장은 의도적으로 채택 안 함 (철학적 방어불가 + 매개-조작 한정 steerability)" 1문단으로 명시. 패널 labeler ≠ 평가모델, 라벨은 RQ2/RQ3 분석 입력일 뿐 완화 주입에 미사용 → 순환 구조 자체가 없음 |
 
 ---
 
@@ -324,19 +339,19 @@ omission/
 │   │   │   └── eval_model.py                  # ★ 신설: 한 모델 × 벤치마크 → tuple jsonl
 │   │   ├── metrics/
 │   │   │   └── obr_metrics.py                 # ★ 신설: tuple jsonl → per-(model × pair) OBR/ABR/FCR
-│   │   └── mitigation/                        # ★ 7월에 채움 (E7)
+│   │   └── mitigation/                        # ★ 7월 (E7 = RQ4): conditions.py/run_mitigation.py/metrics.py
 │   ├── analysis/
-│   │   ├── per_model_obr.py                   # ★ 신설 (E1)
-│   │   ├── obr_by_conflict.py                 # ★ 신설 (E2)
-│   │   ├── model_signatures.py                # ★ 신설 (E3 cosine + permutation)
-│   │   ├── nn_vs_yy.py                        # ★ 신설 (E5)  — harm_strata.py 폐기
+│   │   ├── filter_vs_random.py               # ★ 신설 (E1 = RQ1: filtered vs random OBR + Wilcoxon)
+│   │   ├── obr_by_conflict.py                 # ★ 신설 (E2 = RQ2 서술)
+│   │   ├── fingerprint.py                     # ★ 신설 (E3 = RQ3 도덕지문: leaning profile + null perm + cosine)
+│   │   ├── nn_vs_yy.py                        # ★ 신설 (E5 = RQ5)  — harm_strata.py 폐기
 │   │   └── panel_disagreement_legacy.py       # 변경 없음 (legacy)
 │   └── shared/                                # 변경 없음
 ├── outputs/
 │   ├── experiments/
-│   │   ├── E1_overall_OBR/
-│   │   ├── E2_OBR_by_conflict/
-│   │   ├── E3_signatures/
+│   │   ├── E1_filter_vs_random/              # RQ1
+│   │   ├── E2_OBR_by_conflict/               # RQ2
+│   │   ├── E3_fingerprint/                   # RQ3 (구 E3_signatures)
 │   │   ├── E5_NN_vs_YY/
 │   │   ├── E7_mitigation/
 │   │   └── E6_human_anchor/                   # 옵션
@@ -354,14 +369,14 @@ omission/
 2. **Filter pass rate (충족):** 실측 61.0% (401/657, no-line) — 50-90% 범위 내. ✓
 3. **Label rate (충족):** Stage 1 통과 중 labeled 비율 실측 ≈ 54% (218/401). ✓ (≥ 40% 임계 통과.)
 4. **Final benchmark size (재설정, 2026-05-16):** 옛 "≥ 200, ≥ 8 distinct pair, cell 평균 ≥ 25" 는 util-vs-consensus 붕괴로 **기각** (실제: labeled 218, 사용 cell = 주축 1 + 비공리주의 부차축 6, cell n 8–83). 재임계: **labeled ≥ 180** (프롬프트 변형 범위 198–220, 사전 임계는 robustness 변동으로 간주) **AND 비공리주의 부차축 중 cell n ≥ 8 인 것 ≥ 4종**.
-5. **E1:** 모든 모델의 parse-fail + refusal 합산 ≤ 10%. 모델 간 overall OBR pairwise z-test 유의 ≥ 1 쌍.
-6. **E2 (RQ2a, spine 필수):** 적어도 1 모델에서 — util-vs-consensus 주축 vs 비공리주의 부차축, 또는 부차축 cell 간 — OBR 차이가 mixed-effects (scenario random intercept) 하에서 유의 (p < 0.05) 하고 top-bottom OBR spread ≥ 0.15.
-7. **E3 (RQ2b, nested 보너스 — 실패 허용):** profile vector = 7-dim (주축 1 + 부차축 6, cell n ≥ 8 인 것만). 모델-모델 cosine 행렬에서 ≥ 1 model pair 의 profile cosine < **0.85**, permutation p < 0.05. (cell 다양성 제한으로 임계 0.8→0.85 완화, 2026-05-16.)
-8. **E5:** NN rate vs YY rate Spearman ρ across cell 가 모델 절반 이상에서 |ρ| ≥ 0.3 (양·음 둘 다 의미 있음).
-9. **E7 (spine 처방):** supplement plan §Verification — top-2 high-OBR 모델에서 C2 또는 C3 의 ΔNN McNemar Bonferroni p < 0.05, 그리고 C0=NN→C2 가 YN-편향 (Fisher one-sided p < 0.05).
-   *(E4 harm-strata 검증 항목 폐기, 2026-05-16.)*
+5. **E1 (RQ1, spine 필수):** 모든 모델 parse-fail+refusal ≤ 10%. 모델 가로질러 `OBR(filtered) > OBR(random)` Wilcoxon one-sided p < 0.05, 모델 과반에서 부호 일치.
+6. **E2 (RQ2, 서술):** 적어도 1 모델에서 — util-vs-consensus 주축 vs 비공리주의 부차축, 또는 부차축 cell 간 — OBR 차이가 mixed-effects (scenario cluster) 하 유의 (p < 0.05) 하고 top-bottom spread ≥ 0.15.
+7. **E3 (RQ3, 핵심):** ≥ 1 모델 leaning profile 이 null(패널 base rate) 대비 permutation p < 0.05; 모델-모델 cosine 행렬 ≥ 1 쌍 < **0.85**. (실패해도 spine=RQ1 무손상 — 편향율 차이만 보고.)
+8. **E5 (RQ5):** NN vs YY Spearman ρ across cell 가 모델 절반 이상에서 |ρ| ≥ 0.3.
+9. **E7 (RQ4 완화):** supplement plan §Verification — top-2 high-OBR 모델에서 {M2,M3,M3b,M4} 중 ≥1 의 credited ΔNN McNemar Bonferroni p < 0.05 **AND** M1(generic CoT) 초과. credited(NN→{YN,NY}) ≥ NN→YY.
+   *(E4 harm-strata 검증 폐기 유지, 2026-05-16.)*
 
-**RQ1 + RQ2 동시 실패 (= 모델 간·pair 간 OBR 모두 평탄) 시:** 본 plan 의 core thesis 실패. discussion 섹션을 "omission bias 는 모델·도덕적 문맥에 invariant 한 single global phenomenon" 으로 reframe — PNAS thesis 강화 형태의 negative-result paper 로 전환.
+**RQ1 실패 (= filtered 와 random 의 OBR 차이 없음) 시:** 구축법의 핵심 가치 기각 → discussion 을 "philosophy-disagreement filter 는 무선추출 대비 부가가치 미미, omission bias 는 도덕 문맥에 invariant" 로 reframe (negative-result, PNAS 강화형). RQ3(지문)·RQ4(완화)는 RQ1 실패와 무관하게 독립 보고 가능.
 
 ---
 
@@ -371,27 +386,29 @@ OSF 사전등록 권장 항목:
 
 - 각 RQ 의 primary metric 과 임계 (위 §10).
 - 가설 방향:
-  - RQ1: 모델 간 overall OBR pairwise z-test, 적어도 1 쌍 유의 (directional 아님, exploratory).
-  - RQ2a: model 내 conflict pair 간 OBR χ² 유의 ≥ 1 모델 (directional 아님). *spine 필수.*
-  - RQ2b: cosine 차이 + permutation p < 0.05 (directional 아님). *RQ2 의 nested 보너스, RQ2a 조건부, 실패 허용 (RQ3 → RQ2b 병합).*
-  - RQ5: NN-YY Spearman ρ 의 부호와 크기는 exploratory; *둘이 동일 phenomenon 이라는 null* 을 reject 하는 것이 목적.
-  - E7: H7a–H7f (supplement plan). C2/C3 directional (one-sided, oracle 인과 probe·상한선), H7f = C1/C4 label-free 회수율 ≥50% (배포 주장은 여기서만), 나머지 exploratory.
-  - *(RQ4 harm stratum interaction 항목 폐기 — 2026-05-16, §2 note 참조.)*
+  - RQ1: `OBR(filtered) > OBR(random)` **directional** (Wilcoxon one-sided), 모델 전반 일관. *spine 필수.*
+  - RQ2: model 내 conflict pair 간 OBR 차이 mixed-effects 유의 ≥ 1 모델 (directional 아님, 서술).
+  - RQ3: leaning profile vs null permutation p < 0.05 ≥ 1 모델 + 모델간 cosine ≥ 1 쌍 < 0.85 (directional 아님). *핵심, 실패해도 RQ1 spine 무손상.*
+  - RQ4 (완화): H1–H4 (supplement plan). H4 = {M2,M3,M3b,M4} 중 ≥1 credited ΔNN McNemar one-sided Bonferroni 유의 AND M1 초과. credited = NN→{YN,NY} 만 (NN→YY 불인정). 보조 M4 vs M3/M3b exploratory.
+  - RQ5: NN-YY Spearman ρ 부호·크기 exploratory; *둘이 동일 phenomenon 이라는 null* reject 가 목적.
+  - *(단일-철학 oracle 주입(구 C2/C3)·H7f label-free 회수율·harm-strata interaction 항목 전부 폐기 — 2026-05-17.)*
 - **비독립성 분석 방법 사전 commit (2026-05-16):** per-(model×pair) OBR 의 모든 추론 검정은 `scenario_id` 를 random intercept 로 둔 mixed-effects (또는 cluster-robust SE, cluster=scenario). 한 시나리오가 다중 cell 에 기여하는 구조를 prereg 에 명시 — 옛 primary-conflict (시나리오당 1 cell) 방식은 폐기.
 - **프롬프트 변형 robustness 사전 commit:** canonical = neutral no-line `philosophies.py`. with-line v1 + interventionist v2 는 appendix robustness (3 변형 모두 util-vs-consensus 구조 동일이 사전 예측). main 분석은 no-line 만.
 - 분석 데이터 freeze: `omission-bench-v1.jsonl` v1 의 SHA-256 을 commit 에 기록, 그 이후 conflict 라벨 재조정 금지.
 - Exclusion criteria: parse failure, refusal, paradigm-misfit (`paradigm_misfit.txt`), malformed paired_frames (`G_116/125/228/330`) 사전 명시.
-- Negative result 해석 정책: §10 의 RQ1+RQ2a 동시 실패 시 → "fault line 은 1차원 (consequentialist vs consensus), PNAS 축 환원" 으로 fallback (§3.8); 주축 성립·부차축 평탄이면 novelty 만 축소되고 spine(RQ2a 주축+E7) 은 유지 — 사전 commit.
+- Negative result 해석 정책: §10 의 RQ1 실패 시 → "filter 는 무선추출 대비 부가가치 미미, omission bias 는 도덕 문맥 invariant" negative reframe; RQ3/RQ4 는 RQ1 실패와 독립 보고. RQ2 부차축 평탄이면 "fault line 1차원 (PNAS 축 환원)" 으로 §3.8 fallback. 사전 commit.
 
 ---
 
 ## 12. 핵심 contributions (paper bullets — 2 개로 압축)
 
-> 4개 나열은 grab-bag 으로 읽혀 spine 을 묻는다. intro 의 contribution 은 아래 **2개** 로만 진술. 나머지 (RQ1 cross-model 확장, RQ2b signature, RQ5 NN/YY) 는 contribution bullet 이 아니라 이 2개를 떠받치는 *supporting/robustness 결과* 로 본문 내에 배치. (RQ3→RQ2b 병합·RQ4 harm-strata 폐기, 2026-05-16.)
+> intro 의 contribution 은 아래 **3개** 로 진술 (인과 주장 없음, 2026-05-17 재정의). RQ5(NN/YY) 는 contribution bullet 이 아니라 robustness 결과로 본문 내 배치.
 
-1. **Two-stage philosophy-panel 으로 conflict-typed paired benchmark 구축법:** Mirror-framed 시나리오 위에서 5 도덕철학 persona 의 (frame_A, frame_B) 튜플 만장일치를 filter, 양극 (yn vs ny) 으로 갈리는 것만 *pairwise conflict pair* 로 라벨링 → *어떤 철학적 대립인지* 가 메타 라벨로 붙은 `omission-bench-v1.jsonl`. (방법론적 신규)
+1. **Two-stage philosophy-panel 으로 conflict-typed paired benchmark 구축법 + 그 검증:** Mirror-framed 시나리오 위에서 5 도덕철학 persona 의 (frame_A, frame_B) 튜플 만장일치를 filter, 양극 (yn vs ny) 으로 갈리는 것만 *pairwise conflict pair* 로 라벨링 → *어떤 철학적 대립인지* 가 메타 라벨로 붙은 `omission-bench-v1.jsonl`. **핵심 검증 (RQ1): 이 filter 가 random sampling 보다 framing-invariant omission bias 를 더 잘 노출함을 모델 전반에서 보임** — 구축법이 무선 대비 부가가치가 있다는 직접 증거. (방법론적 신규 + 검증)
 
-2. **★ Main: 패널 불일치 = omission bias 의 조작 가능한 인과 축:** 같은 패널 신호가 (a) 시나리오의 충돌유형으로 평가 모델의 OBR 을 *예측* 하고 (RQ2a), (b) 그 신호가 지목한 철학을 oracle 로 주입(C2/C3)하면 OBR 이 예측 방향(C2→YN, C3→NY)으로 이동 → philosophy-conflict 축이 *인과* 임을 knockout-style 로 입증 + 제거 가능 bias 의 *상한선* 산출 (배포 방법 주장 아님), (c) 라벨이 필요 없는 C1/C4 가 그 상한선의 ≥50% 를 라벨 없이 회수 → *배포 가능한* 완화. C5/low-OBR control 로 신호 특정성·floor, 별-모델 labeler 로 비순환성 확보 → correlational 이 아니라 causal claim + actionable. PNAS (단일 util↔deon, simultaneous-framing) 와 Scherrer (model-philosophy 군집) 어느 쪽도 하지 않은 *진단·인과확인 동일기구 + label-free 배포* 의 closure.
+2. **모델 도덕지문 + 충돌-유형 구조 분석 (RQ2/RQ3):** (a) 모델별로 어떤 철학-충돌 유형에서 OBR 이 강한지의 *비평탄* 구조 (서술), (b) ★ 모델이 frame-consistent 답을 한 시나리오에서 어느 철학 진영과 일치하는지를 패널 라벨로 역추적한 **per-model 도덕지문** (예: 공리주의-일치 비율) + 편향율, 모델 간 지문 cosine 비교. PNAS(단일 util↔deon)·Scherrer(model-philosophy 군집) 어느 쪽도 안 한 *패널 라벨 ↔ 평가모델 행동* 의 정렬 프로파일.
+
+3. **철학중립·label-free 완화 + 5-철학 균형주입 비교 (RQ4):** 자기찬반(M3)·결정장부(M3b)·동시제시(M2) 등 라벨 불필요·임의질의 적용 가능한 prompt 완화가 NN 을 frame-consistent 방향으로 (NN→YN/NY, action-bias 치환 NN→YY 는 불인정) 줄이는지, 그리고 5-철학 *균형* 주입(MAD, 단일철학 아님)이 추가로 더 깎는지·도덕지문을 어떻게 옮기는지. generic CoT(M1) 통제로 "단순 reflection 환원" 선제 차단. *단일-철학 oracle 주입(구 C2/C3) 및 인과 주장은 채택 안 함 — 철학적 방어불가 + 매개-조작 한정 steerability.*
 
 ---
 
@@ -415,3 +432,5 @@ OSF 사전등록 권장 항목:
 - **인간 anchor 옵션화:** v3 E8 은 paper 의 필수 → v4 E6 는 옵션 (reviewer 요구 시).
 - **신설 도구:** `src/data_construction/philosophy_panel/{filter.py, label.py}` (2026-05-13 작성 완료), `src/evaluation/runners/eval_model.py`, `src/evaluation/metrics/obr_metrics.py`, `src/analysis/{per_model_obr, obr_by_conflict, model_signatures, nn_vs_yy}.py` (예정; harm_strata.py 폐기).
 - **legacy 표기:** `src/analysis/panel_disagreement.py` → `panel_disagreement_legacy.py` (2026-05-13, 새 (A,B) tuple 로직과 비호환).
+- **★ RQ 전면 재정의 + 인과실험 폐기 (2026-05-17):** 사용자 결정. 구 spine ("패널 불일치 = 조작 가능한 인과 축", C2/C3 oracle 주입으로 인과 입증, C1/C4 label-free 회수 H7f, C2-scramble/cross-over 키스톤) **전면 폐기** — 단일-철학을 정답인 양 주입하는 철학적 방어불가 + 그 주입은 조작 불가능한 *원인*이 아니라 *매개*를 건드리는 한정 steerability 주장이라 인과 closure 불성립. **새 RQ: RQ1 구축검증(filter>random, spine) / RQ2 충돌-유형 OBR(서술) / RQ3 모델 도덕지문(YN→yn_phils·NY→ny_phils·NN/YY→non-aligned, 구 RQ2b signature 흡수) / RQ4 5-철학 균형주입=완화(통합).** 완화는 별도 E7 이 아니라 RQ4 의 comparator 묶음 (M0 base / M1 generic CoT / M2 두-프레임 동시 양쪽 yes-no / M3 자기찬반 / M3b 결정장부 / M4 철학5 MAD); NN-exit 분해 (credited NN→{YN,NY} vs flagged NN→YY). 구 §8 ★fatal 2행(oracle-label·순환논증)은 *원인 소멸로 자동 해소*. contribution 2→3 (구축+검증 / 분석·지문 / 완화), 인과 문구 전 섹션 제거. supplement plan 전면 개정. 매핑 E1=RQ1·E2=RQ2·E3=RQ3·E7=RQ4. (B 철학없는 찬반팀 토론은 M3 와 역할중복으로 미채택.)
+- **★ M4(MAD) 폐기 + 완화 스코프 전면 218 (2026-05-18):** 사용자 결정. M4 = 시나리오당 20콜(비용 driver) + 파서 취약(VERDICT/R2 절단) + 모델 의존적 net-harmful(llama: credited≈flagged, NN→YY 치환) → **완화 조건에서 완전 제거**. 잔존 조건 = M0/M1/M2/M3/M3b. primary(Bonferroni) {M2,M3,M3b,M4}→**{M2,M3,M3b}**, H4 동일 치환, "M4 vs M3/M3b 철학-anchoring 보조분석"·"RQ3 base↔M4 지문이동"·F5 M4 항 폐기. 또한 Codex 설계검토 반영하여 **핫스팟 top-3-cell ≤120 manifest 폐기 → 전체 218 labeled × 5 모델 전수**(서브샘플 편향·non-NN harm 커버리지·통계력 개선; `run_mitigation.py --all-scenarios`, M0=E1 재사용). 비용 M4 제거로 ~9.8k 호출(5조건). prereg 무결성: 구 hotspot manifest 는 `config_hotspot_superseded_*.yaml` 로 보존, 전수 분석은 "사후 확장"으로 라벨 (Codex 권고; M0 test-retest 는 사용자 판단으로 생략 → 청구는 "consistent with mitigation" 톤, T=0 결정성 미검증을 limitation 명시). `conditions.py` CONDITIONS 에서 M4 미등록(run_M4 코드는 provenance 로 잔존). supplement plan 상단 배너와 sync.

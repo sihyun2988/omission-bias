@@ -29,6 +29,7 @@ pilot/results/
 
 # Local agent metadata
 .agents/
+.claude/
 .codex/
 
 # Local references / scratch backups

@@ -58,12 +58,52 @@ def load_env() -> None:
         pass
 
 
+# Gateway resilience (api.ssunlp.co.kr is flaky: indefinite hangs + 5xx/504
+# bursts under load — see 2026-05-18/19 E7 run). Per-request timeout so a
+# stuck request can never freeze a whole run; bounded exponential backoff
+# on transient errors so a degraded window yields retries, not ERR rows.
+_REQUEST_TIMEOUT_S = float(os.environ.get("LLM_REQUEST_TIMEOUT_S", "120"))
+_MAX_RETRIES = int(os.environ.get("LLM_MAX_RETRIES", "6"))
+
+
+def _create_with_retry(client, **kwargs):
+    """chat.completions.create with timeout + backoff on transient gateway
+    failures (timeout / connection / 429 / 5xx incl. 504). Non-transient
+    errors (4xx auth/validation) are raised immediately."""
+    import time as _t
+
+    from openai import (
+        APIConnectionError, APITimeoutError, InternalServerError,
+        RateLimitError, APIStatusError,
+    )
+
+    transient = (APITimeoutError, APIConnectionError,
+                 InternalServerError, RateLimitError)
+    last = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except transient as e:
+            last = e
+        except APIStatusError as e:
+            if getattr(e, "status_code", 0) < 500 and \
+                    getattr(e, "status_code", 0) != 429:
+                raise
+            last = e
+        if attempt < _MAX_RETRIES:
+            _t.sleep(min(2 ** attempt, 30))  # 1,2,4,8,16,30…
+    raise last
+
+
 def _openai_compatible(base_url: str | None, api_key_env: str, default_model: str):
     from openai import OpenAI
     api_key = os.environ.get(api_key_env)
     if not api_key:
         raise RuntimeError(f"{api_key_env} is not set in environment / .env")
-    client = OpenAI(base_url=base_url, api_key=api_key) if base_url else OpenAI(api_key=api_key)
+    _opts = dict(api_key=api_key, timeout=_REQUEST_TIMEOUT_S, max_retries=0)
+    if base_url:
+        _opts["base_url"] = base_url
+    client = OpenAI(**_opts)
 
     def call(model: str, system: str, user: str, temperature: float, max_tokens: int) -> str:
         messages = [
@@ -81,9 +121,10 @@ def _openai_compatible(base_url: str | None, api_key_env: str, default_model: st
             # ones (gpt-5, o-series) reject anything != 1 on the gateway.
             if not is_strict_reasoning_model(model):
                 kwargs["temperature"] = temperature
-            resp = client.chat.completions.create(**kwargs)
+            resp = _create_with_retry(client, **kwargs)
         else:
-            resp = client.chat.completions.create(
+            resp = _create_with_retry(
+                client,
                 model=model,
                 messages=messages,
                 temperature=temperature,

@@ -1,85 +1,82 @@
-# Related Work (draft v0 — 2026-05-17)
+# Related Work (초안 v0 — 2026-05-17, 한글본 2026-05-18)
 
 > 초안. ACL `\citep{}` / `\citet{}` 키는 `paper/references.bib` 와 일치. RQ 프레이밍이
 > 확정되기 전이라, plan 이 바뀌어도 살아남는 네 기둥(① 인간 omission/framing bias →
 > LLM 확장, ② LLM 도덕 신념 벤치마크, ③ LLM 의 인지·프레이밍 편향 일반, ④ 도덕철학
-> 프레임워크의 persona 조건화)으로만 구성. 본문 분량 목표 ≈ 0.75 p.
+> 프레임워크의 persona 조건화)으로만 구성. 본문 분량 목표 ≈ 0.75 p. 제출 시 영문화.
 
 ## 2. Related Work
 
-### 2.1 Omission bias and framing effects in moral judgment
+### 2.1 도덕 판단에서의 부작위 편향과 프레이밍 효과
 
-The tendency to judge harmful *actions* as worse than equally harmful *omissions* —
-the **omission bias** — is a well-documented finding in the moral psychology of
-judgment and decision-making \citep{spranca1991omission, ritov1990reluctance,
-baron1994omission}. It is closely tied to the broader phenomenon of *framing effects*,
-in which logically equivalent descriptions of the same decision elicit systematically
-different choices depending on whether an outcome is framed as a gain or a loss, or as
-resulting from acting or refraining \citep{tversky1981framing}. For our purposes,
-distinguishing a bias from a stable preference requires **framing invariance**: a
-preference for inaction counts as omission bias only if it survives an action↔omission
-re-description of the *same* underlying dilemma.
+해를 끼치는 *작위*를 동등하게 해로운 *부작위*보다 더 나쁘게 판단하는 경향 —
+즉 **부작위 편향(omission bias)** — 은 판단·의사결정 도덕심리학에서 잘
+정립된 발견이다 \citep{spranca1991omission, ritov1990reluctance,
+baron1994omission}. 이는 더 넓은 *프레이밍 효과* 현상과 밀접하게 연결되는데,
+논리적으로 동등한 동일 결정의 서술이 결과를 이득으로 표현하느냐 손실로
+표현하느냐, 또는 행동의 결과로 표현하느냐 자제의 결과로 표현하느냐에 따라
+체계적으로 다른 선택을 유발한다 \citep{tversky1981framing}. 본 연구의 목적상,
+편향을 안정적 선호와 구분하려면 **프레이밍 불변성(framing invariance)** 이
+요구된다. 즉, 부작위에 대한 선호는 *동일한* 근저의 딜레마를 작위↔부작위로
+재서술해도 유지될 때에만 부작위 편향으로 인정된다.
 
-\citet{cheung2025amplified} extend this paradigm to large language models. Across four
-studies — including a preregistered replication and Reddit-sourced everyday dilemmas —
-they show that LLMs exhibit an omission bias that is *stronger* than that of a
-representative U.S. sample, and additionally a "no"-bias whereby models flip their
-recommendation depending on question wording. Crucially, they operationalize the bias
-through paired action↔omission frames and provide evidence that it arises primarily
-from fine-tuning for chatbot applications rather than from pretraining. Our work takes this operational definition
-(framing-invariant inaction over a paired-frame construction) as its measurement
-primitive, but departs from \citet{cheung2025amplified} in two ways: we measure the bias
-*across a broad set of contemporary models* rather than around a single GPT-4 anchor,
-and we condition the analysis on *which moral-philosophical conflict* a scenario
-instantiates rather than the single utilitarian↔deontological axis used in prior work.
+\citet{cheung2025amplified} 는 이 패러다임을 대형 언어 모델로 확장한다. 사전
+등록 복제와 Reddit 출처의 일상 딜레마를 포함한 네 개의 연구에 걸쳐, 그들은
+LLM 이 대표성 있는 미국 표본보다 *더 강한* 부작위 편향을 보이며, 추가로 질문
+표현에 따라 권고를 뒤집는 "no"-편향을 보임을 밝힌다. 결정적으로, 그들은 짝지은
+작위↔부작위 프레임으로 편향을 조작적으로 정의하고, 그 편향이 사전학습이
+아니라 챗봇 응용을 위한 미세조정에서 주로 발생한다는 증거를 제시한다. 본
+연구는 이 조작적 정의(짝-프레임 구성 위의 프레이밍 불변 부작위)를 측정
+원형으로 채택하되, 두 가지 점에서 \citet{cheung2025amplified} 와 갈라진다.
+우리는 단일 GPT-4 기준점 주변이 아니라 *광범위한 현대 모델 집합 전반에서*
+편향을 측정하고, 선행 연구의 단일 공리주의↔의무론 축이 아니라 시나리오가
+*어떤 도덕철학적 충돌*을 구현하는지에 따라 분석을 조건화한다.
 
-### 2.2 Benchmarking the moral beliefs of LLMs
+### 2.2 LLM 도덕 신념의 벤치마킹
 
-A growing line of work probes the moral content encoded in LLMs through large-scale
-scenario surveys. \citet{scherrer2023moralbeliefs} introduce **MoralChoice**, 680
-high-ambiguity and 687 low-ambiguity scenarios, each with a description, two actions,
-and rule-violation labels, administered to 28 open- and closed-source models; they find
-that closed-source models tend to agree with one another and that responses are
-sensitive to question wording — the same wording-sensitivity that \citet{cheung2025amplified}
-later formalize as a framing bias. \citet{hendrycks2021ethics} (ETHICS) and related
-moral-reasoning suites instead score models against aggregated human moral judgments.
-These benchmarks measure *what* a model decides; they do not isolate *whether a decision
-is an artifact of framing*, nor do they label scenarios by the moral-philosophical
-disagreement they provoke. We build directly on the MoralChoice high-ambiguity pool but
-re-cast each scenario into a paired mirror frame and attach a philosophy-conflict label,
-turning a single-frame belief survey into a paired-frame bias benchmark. MoralChoice
-supplies the scenario pool, but identifying *which* scenarios sit on a contested moral
-fault line requires an independent construction-time signal; we obtain it from the
-disagreement of a moral-philosophy panel (§2.4).
+LLM 에 인코딩된 도덕적 내용을 대규모 시나리오 조사로 탐침하는 연구가 늘고
+있다. \citet{scherrer2023moralbeliefs} 는 **MoralChoice** 를 제안하는데, 각각
+서술·두 행동·규칙 위반 라벨을 가진 고-모호성 680개와 저-모호성 687개
+시나리오를 28개의 공개·비공개 모델에 투여한다. 그들은 비공개 모델들이 서로
+일치하는 경향을 보이며 응답이 질문 표현에 민감함을 발견하는데 — 이는
+\citet{cheung2025amplified} 가 후에 프레이밍 편향으로 형식화하는 바로 그
+표현-민감성이다. \citet{hendrycks2021ethics} (ETHICS) 및 관련 도덕추론
+벤치마크는 대신 모델을 집계된 인간 도덕 판단에 대비해 채점한다. 이들
+벤치마크는 모델이 *무엇을* 결정하는지를 측정한다. 그러나 결정이 *프레이밍의
+산물인지 여부*를 분리하지 못하며, 시나리오를 그것이 유발하는 도덕철학적
+불일치로 라벨링하지도 않는다. 우리는 MoralChoice 고-모호성 풀 위에 직접
+구축하되, 각 시나리오를 짝지은 미러 프레임으로 재구성하고 철학-충돌 라벨을
+부착하여, 단일-프레임 신념 조사를 짝-프레임 편향 벤치마크로 전환한다.
+MoralChoice 는 시나리오 풀을 제공하지만, *어떤* 시나리오가 다툼이 있는 도덕적
+단층선 위에 있는지를 식별하려면 독립적인 구성-시점 신호가 필요하다. 우리는
+이를 도덕철학 패널의 불일치에서 얻는다 (§2.4).
 
-### 2.3 Cognitive and framing biases in LLMs
+### 2.3 LLM 의 인지·프레이밍 편향
 
-Beyond the moral domain, LLMs have been shown to exhibit human-like patterns of
-cognitive bias: sensitivity to option order and prompt phrasing
-\citep{zheng2024large, pezeshkpour2024sensitivity}, sycophantic agreement with the
-user's stated view \citep{perez2023discovering, sharma2024sycophancy}, and classic
-judgment-and-decision framing effects reproduced in controlled prompts
-\citep{binz2023using, echterhoff2024cognitive}. Omission bias, in this light, is one
-member of a broader class of framing-dependent failures; what distinguishes the moral
-case is that the favored response (inaction) carries normative weight.
-Our contribution to this line is methodological: rather than reporting a single bias
-magnitude per model, we profile *where* in a typed space of moral conflicts each model's
-framing-invariant inaction concentrates, yielding a per-model bias *signature* rather
-than a scalar.
+도덕 영역을 넘어, LLM 은 인간과 유사한 인지 편향 패턴을 보임이 밝혀져 왔다.
+선택지 순서와 프롬프트 표현에 대한 민감성 \citep{zheng2024large,
+pezeshkpour2024sensitivity}, 사용자가 표명한 견해에 동조하는 아첨
+\citep{perez2023discovering, sharma2024sycophancy}, 통제된 프롬프트에서
+재현되는 고전적 판단·의사결정 프레이밍 효과 \citep{binz2023using,
+echterhoff2024cognitive} 등이다. 이 관점에서 부작위 편향은 프레이밍-의존
+실패의 더 넓은 부류의 한 구성원이다. 도덕적 사례를 구별 짓는 것은 선호되는
+응답(부작위)이 규범적 무게를 지닌다는 점이다. 이 계열에 대한 우리의 기여는
+방법론적이다. 모델당 단일 편향 크기를 보고하는 대신, 우리는 유형화된 도덕
+충돌 공간에서 각 모델의 프레이밍 불변 부작위가 *어디에* 집중되는지를
+프로파일링하여, 스칼라가 아니라 모델별 편향 *지문(signature)* 을 산출한다.
 
-### 2.4 Moral-philosophy frameworks and persona conditioning
+### 2.4 도덕철학 프레임워크와 persona 조건화
 
-Several works elicit or steer LLM behavior by conditioning on a normative stance —
-prompting a model to reason as a utilitarian vs. a deontologist, or otherwise assigning
-it a moral persona \citep{simmons2023moral, jiang2021delphi}. Prior uses of
-philosophical framing largely
-treat it as a *manipulation* of the model under test. We instead use a panel of five
-moral-philosophy personas as a **construction-time signal**: the panel's *disagreement*
-across the paired frames identifies moral fault-line scenarios and types them by the
-specific philosophical conflict (e.g., utilitarian vs. care) they expose. The
-philosophy panel thus plays no role at evaluation time — the evaluated models receive no
-persona injection — keeping the construction signal separated from the
-evaluation-time metric.
+여러 연구가 규범적 입장을 조건으로 부여하여 LLM 행동을 유도하거나
+조종한다 — 모델에게 공리주의자 대 의무론자로 추론하라고 프롬프트하거나, 그
+밖의 방식으로 도덕 persona 를 부여한다 \citep{simmons2023moral,
+jiang2021delphi}. 철학적 프레이밍의 선행 사용은 대체로 그것을 시험 대상
+모델에 대한 *조작*으로 다룬다. 우리는 대신 다섯 도덕철학 persona 패널을
+**구성-시점 신호**로 사용한다. 짝지은 프레임 전반에서 나타나는 패널의
+*불일치* 가 도덕적 단층선 시나리오를 식별하고, 그것이 노출하는 특정 철학적
+충돌(예: 공리주의 대 돌봄)로 유형화한다. 따라서 철학 패널은 평가 시점에는
+아무 역할도 하지 않으며 — 평가 대상 모델은 어떤 persona 주입도 받지 않는다 —
+구성 신호를 평가-시점 지표로부터 분리한 상태로 유지한다.
 
 ---
 

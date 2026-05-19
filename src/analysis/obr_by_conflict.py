@@ -205,18 +205,16 @@ def chi2_cells(cell_counts: list[tuple[int, int]]) -> tuple[float, int]:
 
 
 # --------------------------------------------------------- cell building ---
-def axis_of(conflict: tuple[str, str]) -> str:
-    """'main' if the pair involves F1_util, else 'sub'."""
-    return "main" if UTIL in conflict else "sub"
-
-
 def cell_key(conflict: tuple[str, str]) -> tuple[str, str, str]:
-    """Directed cell. Main axis is pooled into one cell; sub axes keep the
-    directed (yn_phil, ny_phil)."""
-    if UTIL in conflict:
-        side = "yn" if conflict[0] == UTIL else "ny"
-        return ("main", f"util_{side}", "vs_consensus")
-    return ("sub", conflict[0], conflict[1])
+    """Directed cell, one per (yn_phil, ny_phil) pair.
+
+    Utilitarian conflicts are NOT pooled — every philosophy pair (incl.
+    util-vs-X) is its own directed cell, so the per_cell CSV exposes the
+    full conflict structure. Direction is kept here for E7
+    (see [[project_e7_keystone]]); the heatmap pools direction at render
+    time only.
+    """
+    return ("pair", conflict[0], conflict[1])
 
 
 def scenario_cell_membership(labels: dict) -> dict[str, set]:
@@ -308,24 +306,17 @@ def main():
         cells = cell_obr(labeled_sids, membership, esid)
         # cluster bootstrap: resample labeled scenarios, recompute every cell.
         boot_obr: dict[tuple, list] = defaultdict(list)
-        boot_spread_main_sub, boot_spread_within_sub = [], []
+        boot_spread_within = []
         for _ in range(args.bootstrap):
             res = [random.choice(labeled_sids) for _ in labeled_sids]
             bc = cell_obr(res, membership, esid)
             for ck, rt in bc.items():
                 if rt["OBR"] is not None:
                     boot_obr[ck].append(rt["OBR"])
-            main_o = bc.get(("main", "util_yn", "vs_consensus"), {}).get("OBR")
-            main_o2 = bc.get(("main", "util_ny", "vs_consensus"), {}).get("OBR")
-            mains = [x for x in (main_o, main_o2) if x is not None]
-            subs = [rt["OBR"] for ck, rt in bc.items()
-                    if ck[0] == "sub" and rt["OBR"] is not None
-                    and rt["n"] >= args.min_cell_n]
-            if mains and subs:
-                boot_spread_main_sub.append(
-                    abs(sum(mains) / len(mains) - sum(subs) / len(subs)))
-            if len(subs) >= 2:
-                boot_spread_within_sub.append(max(subs) - min(subs))
+            elig = [rt["OBR"] for rt in bc.values()
+                    if rt["OBR"] is not None and rt["n"] >= args.min_cell_n]
+            if len(elig) >= 2:
+                boot_spread_within.append(max(elig) - min(elig))
 
         for ck, rt in sorted(cells.items()):
             axis, a, b = ck
@@ -337,35 +328,29 @@ def main():
                 "n_scenarios": rt["n"],
                 "OBR": _r(rt["OBR"]), "OBR_lo": _r(ci[0]), "OBR_hi": _r(ci[1]),
                 "ABR": _r(rt["ABR"]), "FCR": _r(rt["FCR"]),
-                "spread_eligible": int(axis == "sub" and rt["n"] >= args.min_cell_n),
+                "spread_eligible": int(rt["n"] >= args.min_cell_n),
             })
 
-        # ---- within-model spread + NN-specificity guard ----
-        sub_cells = {ck: rt for ck, rt in cells.items()
-                     if ck[0] == "sub" and rt["n"] >= args.min_cell_n}
-        main_cells = {ck: rt for ck, rt in cells.items() if ck[0] == "main"}
-        eligible = {**sub_cells, **main_cells}
+        # ---- within-model spread (across all eligible directed pairs)
+        #      + NN-specificity guard ----
+        eligible = {ck: rt for ck, rt in cells.items()
+                    if rt["n"] >= args.min_cell_n}
         obrs = [rt["OBR"] for rt in eligible.values() if rt["OBR"] is not None]
         abrs = [rt["ABR"] for rt in eligible.values() if rt["ABR"] is not None]
         chi, df = chi2_cells([
             (round(rt["OBR"] * rt["n"]), rt["n"])
             for rt in eligible.values() if rt["OBR"] is not None
         ])
-        bms = sorted(boot_spread_main_sub)
-        bws = sorted(boot_spread_within_sub)
+        bws = sorted(boot_spread_within)
         spread_rows.append({
             "model": m,
-            "n_main_cells": len(main_cells),
-            "n_sub_cells_eligible": len(sub_cells),
+            "n_cells_eligible": len(eligible),
             "OBR_min": _r(min(obrs)) if obrs else "",
             "OBR_max": _r(max(obrs)) if obrs else "",
             "OBR_spread": _r(max(obrs) - min(obrs)) if obrs else "",
-            "spread_main_vs_sub": _r(_mean(bms)),
-            "spread_main_vs_sub_lo": _r(_pct(bms, 0.025)),
-            "spread_main_vs_sub_hi": _r(_pct(bms, 0.975)),
-            "spread_within_sub": _r(_mean(bws)),
-            "spread_within_sub_lo": _r(_pct(bws, 0.025)),
-            "spread_within_sub_hi": _r(_pct(bws, 0.975)),
+            "spread_within": _r(_mean(bws)),
+            "spread_within_lo": _r(_pct(bws, 0.025)),
+            "spread_within_hi": _r(_pct(bws, 0.975)),
             "chi2": _r(chi), "chi2_df": df,
             "spearman_OBR_ABR": _r(spearman(obrs, abrs)),
         })
@@ -408,9 +393,9 @@ def main():
     print(f"out                    {out_dir}")
     print()
     print(f"{'model':<26}{'OBR':>7}{'ABR':>7}{'spread':>8}"
-          f"{'main-sub[95%CI]':>22}{'ρ(OBR,ABR)':>12}")
+          f"{'within[95%CI]':>22}{'ρ(OBR,ABR)':>12}")
     for ov, sp in zip(overall_rows, spread_rows):
-        ci = f"[{sp['spread_main_vs_sub_lo']},{sp['spread_main_vs_sub_hi']}]"
+        ci = f"[{sp['spread_within_lo']},{sp['spread_within_hi']}]"
         print(f"{ov['model']:<26}{str(ov['OBR']):>7}{str(ov['ABR']):>7}"
               f"{str(sp['OBR_spread']):>8}{ci:>22}"
               f"{str(sp['spearman_OBR_ABR']):>12}")
@@ -423,7 +408,8 @@ def main():
               f"Δ(lab−one)={cf['diff_labeled_minus_onesided']} "
               f"[{cf['diff_lo']},{cf['diff_hi']}]")
     print()
-    print("Read: spread/main-sub CI excluding 0 (and ≥0.15) ⇒ RQ2a signal; "
+    print("Read: within-pair spread CI excluding 0 (and ≥0.15) ⇒ RQ2a signal "
+          "(OBR depends on which philosophies conflict); "
           "ρ(OBR,ABR) near 0/neg ⇒ NN-specific (RQ5); "
           "Δ(lab−one) CI > 0 ⇒ conflict structure predicts beyond hardness.")
 

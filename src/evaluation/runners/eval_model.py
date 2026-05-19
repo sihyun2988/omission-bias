@@ -28,6 +28,7 @@ import argparse
 import csv
 import json
 import math
+import random
 import re
 import threading
 import time
@@ -82,19 +83,94 @@ def _well_formed(r: dict) -> bool:
     return True
 
 
-def load_paired_frames(path: Path, limit: int | None) -> list[dict]:
-    rows, skipped = [], []
+# Split-second physical / coerced-personal-hand scenarios: the PNAS
+# action↔omission paradigm distorts them when reframed (CLAUDE.md "Paradigm
+# misfit cases"). Excluded from the main run, never the smoke test.
+PARADIGM_MISFIT = {"H_001", "H_005", "H_006"}
+
+
+def load_labeled_ids(labels_path: Path) -> set[str]:
+    """scenario_ids the panel pipeline accepted as the benchmark.
+
+    Only label_status == "labeled" scenarios carry a real inter-philosophy
+    conflict; unanimous / one-sided ones were rejected at construction time as
+    unusable for measuring omission bias, so E1 must not query them.
+    """
+    ids = set()
+    with open(labels_path) as f:
+        for line in f:
+            r = json.loads(line)
+            if r.get("label_status") == "labeled":
+                ids.add(r["scenario_id"])
+    return ids
+
+
+def load_paired_frames(path: Path, limit: int | None,
+                       exclude_misfit: bool = True,
+                       labeled_ids: set[str] | None = None) -> list[dict]:
+    rows, skipped, misfit, unlabeled = [], [], [], 0
     with open(path) as f:
         for line in f:
             r = json.loads(line)
+            sid = r.get("scenario_id", "?")
+            if exclude_misfit and sid in PARADIGM_MISFIT:
+                misfit.append(sid)
+                continue
+            if labeled_ids is not None and sid not in labeled_ids:
+                unlabeled += 1
+                continue
             if _well_formed(r):
                 rows.append(r)
             else:
-                skipped.append(r.get("scenario_id", "?"))
+                skipped.append(sid)
             if limit and len(rows) >= limit:
                 break
     if skipped:
         print(f"WARN: skipped {len(skipped)} malformed scenario(s): {', '.join(skipped)}")
+    if misfit:
+        print(f"WARN: excluded {len(misfit)} paradigm-misfit scenario(s): {', '.join(misfit)}")
+    if labeled_ids is not None:
+        print(f"benchmark scope: {len(rows)} labeled scenario(s) "
+              f"({unlabeled} non-labeled skipped)")
+    return rows
+
+
+def load_sample_set(paired_path: Path, sample_set: str, labels_path: str,
+                     exclude_misfit: bool, seed: int) -> list[dict]:
+    """Pick the scenario set for the requested RQ1 arm.
+
+    labeled            → the benchmark (label_status=="labeled"); current
+                         default behaviour, no sampling.
+    random_complement  → equal-n random draw (seed) from the high-amb paired
+                         pool NOT in the labeled set. PRIMARY RQ1 control
+                         (plan §200: 비-filtered 보완집합 동수).
+    random_full        → equal-n random draw (seed) from the FULL valid pool
+                         (labeled ∪ complement). AUXILIARY baseline.
+
+    All arms share the same paradigm-misfit / malformed exclusion so the only
+    difference between arms is the construction filter, not data hygiene.
+    """
+    labeled_ids = load_labeled_ids(Path(labels_path)) if labels_path else set()
+    if sample_set == "labeled":
+        return load_paired_frames(paired_path, None, exclude_misfit,
+                                  labeled_ids or None)
+    full = load_paired_frames(paired_path, None, exclude_misfit,
+                              labeled_ids=None)
+    by_id = {r["scenario_id"]: r for r in full}
+    n = sum(1 for sid in by_id if sid in labeled_ids)  # match labeled count
+    if sample_set == "random_complement":
+        pool = sorted(sid for sid in by_id if sid not in labeled_ids)
+    elif sample_set == "random_full":
+        pool = sorted(by_id)
+    else:
+        raise SystemExit(f"unknown --sample-set {sample_set!r}")
+    if len(pool) < n:
+        raise SystemExit(f"{sample_set}: pool {len(pool)} < target n {n} "
+                         f"(labeled-set size) — cannot draw equal-n control")
+    picked = set(random.Random(seed).sample(pool, n))
+    rows = [by_id[sid] for sid in by_id if sid in picked]
+    print(f"sample-set={sample_set} seed={seed}: drew {len(rows)} of "
+          f"{len(pool)} pool (target n = labeled {n})")
     return rows
 
 
@@ -214,6 +290,26 @@ def main():
                         "E1_overall_OBR/ file.")
     p.add_argument("--limit", type=int, default=None,
                    help="only the first N scenarios (top-of-file order)")
+    p.add_argument("--keep-misfit", action="store_true",
+                   help="keep paradigm-misfit scenarios (H_001/005/006); "
+                        "default excludes them from the main run")
+    p.add_argument("--labels",
+                   default=str(PROJECT_ROOT / "data" / "panel_outputs"
+                               / "labels_openrouter_openai_gpt-4.1-mini.jsonl"),
+                   help="panel labels JSONL; E1 runs ONLY on label_status="
+                        "'labeled' scenarios (the benchmark). Set to '' to "
+                        "query the full paired-frames corpus instead.")
+    p.add_argument("--sample-set", default="labeled",
+                   choices=["labeled", "random_complement", "random_full"],
+                   help="RQ1 arm: 'labeled' = benchmark (default, current "
+                        "behaviour); 'random_complement' = equal-n random "
+                        "from non-labeled pool (primary RQ1 control); "
+                        "'random_full' = equal-n random from full valid pool "
+                        "(auxiliary). Non-labeled arms ignore --labels for "
+                        "scoping and write under E1_filter_vs_random/<arm>/.")
+    p.add_argument("--seed", type=int, default=42,
+                   help="deterministic sampler seed for the random arms "
+                        "(plan §200 fixes seed=42)")
     # Deterministic single-shot per project policy (2026-05-13).
     p.add_argument("--n-samples", type=int, default=1)
     p.add_argument("--temperature", type=float, default=0.0)
@@ -226,14 +322,21 @@ def main():
 
     if args.output is None:
         now = datetime.now()
-        out = (PROJECT_ROOT / "outputs" / "experiments"
-               / now.strftime("%m%d") / now.strftime("%H%M")
-               / "E1_overall_OBR" / "eval_tuples.jsonl")
+        base = (PROJECT_ROOT / "outputs" / "experiments"
+                / now.strftime("%m%d") / now.strftime("%H%M"))
+        if args.sample_set == "labeled":
+            out = base / "E1_overall_OBR" / "eval_tuples.jsonl"
+        else:
+            out = (base / "E1_filter_vs_random" / args.sample_set
+                   / "eval_tuples.jsonl")
     else:
         out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    scenarios = load_paired_frames(Path(args.paired_frames), args.limit)
+    scenarios = load_sample_set(Path(args.paired_frames), args.sample_set,
+                                args.labels, not args.keep_misfit, args.seed)
+    if args.limit:
+        scenarios = scenarios[:args.limit]
     done = load_done(out)
     items = [
         (s, model, si)
